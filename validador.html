@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Desafios - Oficina de Dados</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #334155;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --error: #dc2626;
+            --error-bg: #fef2f2;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .layout-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 40px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent);
+        }
+
+        .help-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .help-btn:hover {
+            color: var(--accent);
+        }
+
+        p.subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .challenge-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .challenge-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+        }
+
+        .challenge-btn:hover {
+            border-color: var(--text-muted);
+        }
+
+        .challenge-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px 20px;
+            background: var(--bg-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .drop-zone-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            pointer-events: none;
+            margin-top: 15px;
+        }
+
+        .drop-zone-icon {
+            pointer-events: none;
+            color: var(--text-muted);
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-align: left;
+            border: 1px solid transparent;
+            line-height: 1.5;
+        }
+
+        .result.success {
+            display: block;
+            background: var(--success-bg);
+            border-color: #bbf7d0;
+            color: var(--success);
+        }
+
+        .result.error {
+            display: block;
+            background: var(--error-bg);
+            border-color: #fecaca;
+            color: var(--error);
+        }
+
+        .result ul {
+            margin-top: 10px;
+            margin-bottom: 0;
+            padding-left: 20px;
+            font-weight: 400;
+        }
+
+        /* Help Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 5px;
+        }
+
+        .modal-close:hover {
+            color: var(--error);
+        }
+
+        .modal-content {
+            padding: 30px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .modal-content h3 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-top: 25px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .modal-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-content code {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+
+        .modal-content pre {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        
+        .modal-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-main);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="layout-wrapper">
+    <div class="container">
+        <div class="header-container">
+            <h1>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Validador de Dados
+            </h1>
+            <button class="help-btn" id="openHelpBtn" title="Ajuda e Conceitos Básicos">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+        </div>
+        <p class="subtitle">Faça o upload do seu arquivo <strong>tratado.csv</strong> para validação.</p>
+
+        <div class="challenge-selector">
+            <button class="challenge-btn active" data-challenge="1">Desafio 1 (Básico)</button>
+            <button class="challenge-btn" data-challenge="2">Desafio 2 (Intermediário)</button>
+            <button class="challenge-btn" data-challenge="3">Desafio 3 (Avançado)</button>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                </svg>
+            </div>
+            <div class="drop-zone-text">Arraste seu arquivo tratado.csv aqui<br>ou clique para selecionar</div>
+            <input type="file" id="fileInput" accept=".csv">
+        </div>
+
+        <div class="result" id="resultBox"></div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Guia de Sobrevivência
+            </h2>
+            <button class="modal-close" id="closeHelpBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="modal-content">
+            <h3>Conceitos Básicos</h3>
+            <p><strong>O que é uma Variável?</strong><br>
+            Uma variável é como uma "caixa" onde guardamos dados na memória do computador. No Python, criamos variáveis usando o sinal de igual <code>=</code>. Por exemplo, <code>df = pd.read_csv(...)</code> guarda a nossa tabela lida dentro da variável chamada "df" (Data Frame).</p>
+            
+            <p><strong>O que é um Tipo de Dado (Data Type)?</strong><br>
+            Computadores tratam textos e números de forma diferente. 
+            <br>- <code>String</code>: Texto (ex: "10,5" com aspas). Não é possível fazer contas matemáticas com ele.
+            <br>- <code>Float</code>: Número decimal (ex: 10.5).
+            <br>- <code>Integer</code> (Int): Número inteiro (ex: 10).
+            <br>- <code>Datetime</code>: Formato especial para datas, permitindo calcular diferenças de dias ou extrair meses.</p>
+
+            <h3>Passo a Passo dos Desafios</h3>
+            
+            <h4>Desafio 1: Tratamento de Tipos (Obrigatório)</h4>
+            <p><strong>Objetivo:</strong> Consertar uma base onde valores financeiros foram lidos como texto devido ao uso de vírgula.</p>
+            <ol>
+                <li>Carregue o arquivo CSV. Dica: observe o separador usado no arquivo (ponto e vírgula).</li>
+                <li>Identifique a coluna que contém o valor financeiro.</li>
+                <li>Como o Python usa formato numérico americano, substitua as vírgulas por pontos nessa coluna.</li>
+                <li>Converta o tipo de dado da coluna de texto (string) para decimal numérico (float).</li>
+                <li>Salve o resultado como <code>tratado.csv</code> na pasta do desafio.</li>
+            </ol>
+            <p><strong>Comandos que você vai precisar:</strong><br>
+            <code>pd.read_csv(arquivo, sep=";")</code>, <code>df['coluna'].str.replace(",", ".")</code>, <code>df['coluna'].astype(float)</code>, <code>df.to_csv(arquivo, index=False)</code></p>
+
+            <h4>Desafio 2: Limpeza e Nulos (Extra)</h4>
+            <p><strong>Objetivo:</strong> Limpar o cabeçalho e tratar dados vazios de uma planilha do governo.</p>
+            <ol>
+                <li>Carregue a planilha <code>.ods</code>. Como não é um CSV, você precisará usar um leitor de excel.</li>
+                <li>Padronize os nomes de todas as colunas: transforme tudo para letra minúscula e substitua os espaços em branco por underline (<code>_</code>).</li>
+                <li>Exclua as linhas que vieram completamente vazias.</li>
+                <li>Para os buracos restantes (dados nulos nas células), preencha-os com o valor zero.</li>
+                <li>Exporte como <code>tratado.csv</code>.</li>
+            </ol>
+            <p><strong>Comandos que você vai precisar:</strong><br>
+            <code>pd.read_excel(arquivo, engine="odf")</code>, <code>df.columns.str.lower()</code>, <code>df.columns.str.replace(" ", "_")</code>, <code>df.dropna(how="all")</code>, <code>df.fillna(0)</code></p>
+
+            <h4>Desafio 3: Extração de Binários (Extra)</h4>
+            <p><strong>Objetivo:</strong> Vasculhar arquivos de assinatura (p7s) e extrair metadados.</p>
+            <ol>
+                <li>Use o módulo <code>glob</code> do Python para listar todos os arquivos <code>.p7s</code> da pasta.</li>
+                <li>Para cada arquivo encontrado, abra-o no modo leitura binária e leia seu conteúdo.</li>
+                <li>Extraia o nome do remetente (que está no nome do arquivo) e extraia/crie uma chave <code>hash</code> do arquivo.</li>
+                <li>Junte essas informações em uma lista e converta para uma Tabela (DataFrame).</li>
+                <li>Verifique se há linhas duplicadas e remova-as, garantindo que nenhum arquivo foi processado duas vezes.</li>
+                <li>Exporte o resultado.</li>
+            </ol>
+            <p><strong>Comandos que você vai precisar:</strong><br>
+            <code>import glob</code>, <code>glob.glob("*.p7s")</code>, <code>with open(arquivo, "rb") as f:</code>, <code>pd.DataFrame(lista)</code>, <code>df.drop_duplicates()</code></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentChallenge = 1;
+
+    // UI Logic
+    const buttons = document.querySelectorAll('.challenge-btn');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const resultBox = document.getElementById('resultBox');
+    const modal = document.getElementById('helpModal');
+    const openHelpBtn = document.getElementById('openHelpBtn');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+    // Modal Logic
+    openHelpBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+    
+    closeHelpBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Challenge Logic
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentChallenge = parseInt(btn.getAttribute('data-challenge'));
+            resultBox.style.display = 'none';
+            fileInput.value = ''; 
+        });
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length === 0) return;
+        const file = files[0];
+        
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            showResult(false, ["Formato inválido. Por favor, envie um arquivo .csv."]);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            validateCSV(text, currentChallenge);
+        };
+        reader.readAsText(file);
+    }
+
+    // CSV Parser helper
+    function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        if(lines.length === 0) return [];
+        
+        const headers = lines[0].split(',').map(h => h.replace(/["\r]/g, ''));
+        const rows = [];
+        
+        for(let i=1; i<lines.length; i++) {
+            if(!lines[i].trim()) continue;
+            const values = lines[i].split(',').map(v => v.replace(/["\r]/g, ''));
+            let row = {};
+            headers.forEach((h, idx) => {
+                row[h] = values[idx] !== undefined ? values[idx] : "";
+            });
+            rows.push(row);
+        }
+        return { headers, rows };
+    }
+
+    // Validation Logic
+    function validateCSV(text, challenge) {
+        const data = parseCSV(text);
+        if(data.headers.length === 0 || data.rows.length === 0) {
+            showResult(false, ["O arquivo CSV fornecido está vazio ou mal formatado."]);
+            return;
+        }
+
+        const errors = [];
+
+        if (challenge === 1) {
+            if (!data.headers.includes('data') && !data.headers.includes('Data')) errors.push("Coluna 'data' não foi encontrada no arquivo.");
+            if (!data.headers.includes('valor') && !data.headers.includes('Valor')) errors.push("Coluna 'valor' não foi encontrada no arquivo.");
+            
+            if (errors.length === 0) {
+                let allNumeric = true;
+                let hasCommas = false;
+                
+                const valorKey = data.headers.includes('valor') ? 'valor' : 'Valor';
+
+                for (let i = 0; i < Math.min(100, data.rows.length); i++) {
+                    const val = data.rows[i][valorKey];
+                    if (val.includes(',')) hasCommas = true;
+                    if (isNaN(parseFloat(val))) allNumeric = false;
+                }
+
+                if (hasCommas) errors.push("A coluna 'valor' possui vírgulas. Converta as vírgulas para pontos.");
+                if (!allNumeric) errors.push("A coluna 'valor' possui dados não numéricos. Verifique a conversão para Float.");
+            }
+        } 
+        else if (challenge === 2) {
+            let headersClean = true;
+            data.headers.forEach(h => {
+                if (h !== h.toLowerCase().trim().replace(/ /g, '_')) {
+                    headersClean = false;
+                }
+            });
+
+            if (!headersClean) {
+                errors.push("Nomes de colunas não padronizados. Utilize letras minúsculas, sem espaços (substitua por underline).");
+            }
+
+            let hasNulls = false;
+            for (let i = 0; i < data.rows.length; i++) {
+                Object.values(data.rows[i]).forEach(val => {
+                    if (val === "" || val === null || val === "NaN") hasNulls = true;
+                });
+                if (hasNulls) break;
+            }
+
+            if (hasNulls) errors.push("Valores vazios ou nulos detectados no dataset.");
+        }
+        else if (challenge === 3) {
+            if (data.rows.length < 3) {
+                errors.push("Registros insuficientes. O arquivo consolidado deve possuir pelo menos 3 linhas.");
+            }
+
+            if (!data.headers.includes('hash') && !data.headers.includes('hash_extraido')) {
+                errors.push("A coluna 'hash' não foi identificada no arquivo gerado.");
+            }
+
+            const stringifiedRows = data.rows.map(r => JSON.stringify(r));
+            const uniqueRows = new Set(stringifiedRows);
+            if (uniqueRows.size !== stringifiedRows.length) {
+                errors.push("Foram detectadas linhas duplicadas no arquivo.");
+            }
+        }
+
+        if (errors.length > 0) {
+            showResult(false, errors);
+        } else {
+            showResult(true, []);
+        }
+    }
+
+    function showResult(success, errors) {
+        resultBox.className = 'result ' + (success ? 'success' : 'error');
+        if (success) {
+            const iconSvg = `<svg style="display:inline; vertical-align:text-bottom; margin-right:4px;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+            if(currentChallenge === 1) {
+                resultBox.innerHTML = `${iconSvg} <strong>Validação bem-sucedida!</strong> Você concluiu o Desafio 1 corretamente.`;
+            } else {
+                resultBox.innerHTML = `${iconSvg} <strong>Excelente trabalho!</strong> Desafio extra validado com sucesso.`;
+            }
+        } else {
+            const iconSvg = `<svg style="display:inline; vertical-align:text-bottom; margin-right:4px;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+            let html = `${iconSvg} <strong>Foram identificados os seguintes problemas:</strong><ul>`;
+            errors.forEach(e => html += `<li>${e}</li>`);
+            html += "</ul>";
+            resultBox.innerHTML = html;
+        }
+    }
+
+</script>
+</body>
+</html>

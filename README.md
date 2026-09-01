@@ -26,13 +26,18 @@ Nosso script utiliza os seguintes comandos `pandas`:
 - `df['coluna'].astype(tipo)`: Conversão correta de dados.
 
 ## 💡 Atividade para os Participantes
-Durante a oficina, desafiaremos os presentes a realizar o seguinte:
-1. **O Desafio do "Detetive":** Analisar o arquivo `dados_brutos.csv` e listar 3 anomalias que eles encontram apenas olhando o arquivo.
-2. **Implementação:** Seguir nosso script para corrigir essas 3 anomalias usando as funções que explicamos.
-3. **Verificação:** Rodar um novo comando que valide se as anomalias foram corrigidas.
+Durante a oficina, nosso foco será o **Desafio 1**. Os demais são desafios extras (opcionais) para quem quiser se aprofundar!
 
-## 🚀 Como Rodar
+1. **Desafio 1 (Obrigatório - Básico):** `desafio1/bcdata.sgs.22784.csv`. Tratamento de tipos de dados (converter string para número e formatar datas).
+2. **Desafio 2 (Opcional - Intermediário):** `desafio2/CargosVagosVacancias_202607.ods`. Lidar com arquivos de planilhas e tratar dados faltantes (nulos).
+3. **Desafio 3 (Opcional - Avançado):** `desafio3/Hash-*.p7s`. Lidar com extração de múltiplos arquivos não-estruturados/binários e consolidá-los.
+
+**Regra de Ouro:** Para cada desafio, o resultado final deve ser salvo como um arquivo chamado `tratado.csv` dentro da pasta do respectivo desafio (ex: `desafio1/tratado.csv`).
+
+## 🚀 Como Rodar e Validar
 1. Clone o projeto: `git clone [link-do-seu-repositorio]`
-2. Instale: `pip install pandas`
-3. Execute: `python tratamento.py`
-4. Compare `dados_brutos.csv` com `dados_tratados.csv`.
+2. Instale as dependências: `pip install pandas` (e possivelmente `odfpy` para o desafio 2)
+3. Crie seus scripts Python para resolver cada desafio, salvando o output sempre como `tratado.csv` na respectiva pasta.
+4. **Validação:** Não é preciso usar o terminal! 
+   - Dê dois cliques no arquivo `validador.html` (ele abrirá no seu navegador).
+   - Arraste o seu arquivo `tratado.csv` recém-criado para a tela e descubra na hora se você passou no desafio!
