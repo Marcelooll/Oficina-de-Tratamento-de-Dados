@@ -1,0 +1,30 @@
+# Python / Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Data Cleaning Generated Output Files
+tratado.csv
+**/tratado.csv
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.code-workspace
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment Variables & Logs
+.env
+*.log
