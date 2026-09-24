@@ -151,17 +151,21 @@ python gabarito.py
 
 ---
 
-## Plataforma Web de Execução e Validação (`validador.html`)
+## Plataforma Web de Execução e Validação (`index.html` / `validador.html`)
 
-A plataforma permite aos alunos escreverem e executarem o código Python diretamente na interface web:
+A plataforma permite aos alunos escreverem e executarem o código Python diretamente na interface web, tanto localmente quanto hospedada via **GitHub Pages**:
 
-1. Abra o arquivo **`validador.html`** no seu navegador.
-2. Selecione o desafio a ser executado (**Desafio 1**, **Desafio 2** ou **Desafio 3**).
-3. Escreva ou modifique o código no editor de código Python integrado.
-4. Clique em **Executar e Validar Código**.
-5. **Recursos da plataforma:**
-   - **Execução WebAssembly (Pyodide):** Execução nativa do Python e Pandas no navegador.
-   - **Console de Saída:** Exibição imediata das saídas de `sys.stdout` (`print`).
-   - **Diagnóstico Tecnológico de Erros:** Explicitação de exceções (`KeyError`, `AttributeError`, `SyntaxError`) com orientações técnicas em português.
-   - **Painel de Dados Brutos:** Visualização da tabela de entrada original antes do processamento.
-   - **Guia de Código:** Modal de referência com a documentação dos métodos do Pandas.
+- **Acesso via GitHub Pages:** Aceda diretamente pela URL raiz do repositório no GitHub Pages (`index.html`).
+- **Acesso Local:** Abra o arquivo **`index.html`** (ou **`validador.html`**) no seu navegador.
+
+### Como Utilizar:
+1. Selecione o desafio a ser executado (**Desafio 1**, **Desafio 2** ou **Desafio 3**).
+2. Escreva ou modifique o código no editor de código Python integrado.
+3. Clique em **Executar e Validar Código**.
+
+### Recursos da plataforma:
+- **Execução WebAssembly (Pyodide):** Execução nativa do Python e Pandas diretamente no navegador, sem necessidade de servidor backend.
+- **Console de Saída:** Exibição imediata das saídas de `sys.stdout` (`print`).
+- **Diagnóstico Tecnológico de Erros:** Explicitação didática de exceções (`KeyError`, `AttributeError`, `SyntaxError`) com orientações técnicas em português.
+- **Painel de Dados Brutos:** Visualização da tabela de entrada original antes do processamento.
+- **Guia de Código:** Modal de referência com a documentação e passo a passo de métodos do Pandas.

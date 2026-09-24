@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Desafios - Oficina de Tratamento de Dados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Confetti Library para animação de celebração -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Pyodide: Python em WebAssembly para execução no navegador -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --accent-soft: #eff6ff;
+            --success: #15803d;
+            --success-dark: #166534;
+            --success-border: #86efac;
+            --success-bg: #f0fdf4;
+            --error: #b91c1c;
+            --error-dark: #991b1b;
+            --error-border: #fca5a5;
+            --error-bg: #fef2f2;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --badge-bg: #dbeafe;
+            --badge-text: #1e40af;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 16px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .layout-wrapper {
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 32px 28px;
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            border: 1px solid #334155;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .py-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #334155;
+            transition: all 0.3s ease;
+        }
+
+        .py-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e2e8f0;
+        }
+
+        .py-status-badge.loading .py-status-dot {
+            background: #f59e0b;
+            animation: pulse 1.2s infinite;
+        }
+
+        .py-status-badge.ready .py-status-dot {
+            background: #10b981;
+            box-shadow: 0 0 6px #10b981;
+        }
+
+        .py-status-badge.error .py-status-dot {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .help-btn {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .help-btn:hover {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-color: #bfdbfe;
+        }
+
+        p.subtitle {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            margin: 4px 0 20px 0;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        /* Challenge Selector Tabs */
+        .challenge-selector {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .challenge-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 9px 8px;
+            border-radius: 7px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .challenge-btn:hover {
+            color: var(--text-main);
+        }
+
+        .challenge-btn.active {
+            background: #ffffff;
+            color: var(--accent);
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .challenge-btn .badge-pill {
+            font-size: 0.7rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            font-weight: 700;
+        }
+
+        /* Instruction Story Card */
+        .instruction-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instruction-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent);
+        }
+
+        .instruction-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.95rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .story-text {
+            color: #475569;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            margin-bottom: 12px;
+            background: #ffffff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .instruction-steps {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .instruction-steps code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.82em;
+            color: var(--primary);
+        }
+
+        /* ============================================================ */
+        /* CODE EDITOR SECTION */
+        /* ============================================================ */
+        .code-editor-container {
+            border: 1px solid #334155;
+            border-radius: 12px;
+            background: #0f172a;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .editor-top-bar {
+            background: #1e293b;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .editor-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f8fafc;
+            font-size: 0.84rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .editor-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .editor-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .editor-dot.red { background: #ff5f56; }
+        .editor-dot.yellow { background: #ffbd2e; }
+        .editor-dot.green { background: #27c93f; }
+
+        .editor-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #475569;
+            color: #ffffff;
+        }
+
+        .editor-workspace {
+            display: flex;
+            min-height: 240px;
+            position: relative;
+            background: #0f172a;
+        }
+
+        .line-numbers {
+            width: 44px;
+            background: #0b1120;
+            color: #475569;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            padding: 14px 0;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #1e293b;
+        }
+
+        .line-numbers div {
+            padding-right: 10px;
+        }
+
+        .code-textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #f1f5f9;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            padding: 14px;
+            resize: vertical;
+            outline: none;
+            min-height: 240px;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .editor-action-bar {
+            background: #1e293b;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .run-code-btn {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s;
+        }
+
+        .run-code-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+
+        .run-code-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Console Log Output */
+        .console-box {
+            background: #090d16;
+            border-top: 1px solid #1e293b;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #38bdf8;
+            max-height: 140px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .console-header {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 6px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .console-content {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #cbd5e1;
+        }
+
+        /* Modal para Dados Brutos */
+        .raw-data-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .raw-data-content {
+            background: #ffffff;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        .raw-data-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .raw-data-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .raw-data-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* ============================================================ */
+        /* TELAS DE LOADING E RESULTADOS */
+        /* ============================================================ */
+        .loading-screen {
+            display: none;
+            padding: 45px 20px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            animation: fadeIn 0.25s ease;
+            margin-bottom: 20px;
+        }
+
+        .loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.85s linear infinite;
+            margin: 0 auto 16px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        .loading-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .loading-bar-wrap {
+            width: 240px;
+            height: 5px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 16px auto 0 auto;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #3b82f6);
+            width: 0%;
+            border-radius: 4px;
+            animation: fillProgress 0.85s ease forwards;
+        }
+
+        @keyframes fillProgress {
+            0% { width: 5%; }
+            40% { width: 55%; }
+            80% { width: 85%; }
+            100% { width: 100%; }
+        }
+
+        .result-screen {
+            display: none;
+            border-radius: 14px;
+            padding: 28px 24px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* TELA DE SUCESSO */
+        .result-screen.success {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+        }
+
+        .status-badge-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .status-badge-circle.success {
+            background: #dcfce7;
+            color: var(--success);
+            box-shadow: 0 0 0 5px #f0fdf4, 0 4px 12px rgba(22, 163, 74, 0.15);
+        }
+
+        .status-badge-circle.error {
+            background: #fee2e2;
+            color: var(--error);
+            box-shadow: 0 0 0 5px #fef2f2, 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+
+        .success-title {
+            color: var(--success-dark);
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .success-desc {
+            color: var(--success);
+            font-size: 0.92rem;
+            font-weight: 500;
+            margin: 0 0 16px 0;
+            line-height: 1.5;
+        }
+
+        .checklist-box {
+            background: #ffffff;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.88rem;
+            color: #14532d;
+            margin-bottom: 8px;
+            line-height: 1.45;
+        }
+
+        .checklist-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .checklist-item svg {
+            flex-shrink: 0;
+            color: #16a34a;
+            margin-top: 2px;
+        }
+
+        .metric-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #15803d;
+            color: #ffffff;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(21, 128, 61, 0.2);
+        }
+
+        /* TELA DE ERRO */
+        .result-screen.error {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+        }
+
+        .error-title {
+            color: var(--error-dark);
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.01em;
+        }
+
+        .error-desc {
+            color: var(--error);
+            font-size: 0.92rem;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            line-height: 1.5;
+        }
+
+        .error-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .error-card-item {
+            background: #ffffff;
+            border: 1px solid #fecaca;
+            border-left: 4px solid var(--error);
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            color: #7f1d1d;
+            line-height: 1.5;
+        }
+
+        .error-card-item code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .python-error-box {
+            background: #1e1e1e;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 14px;
+            color: #f87171;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        /* Action Buttons on Result Screens */
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .reset-btn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reset-btn.success-reset {
+            background: #15803d;
+            color: #ffffff;
+        }
+
+        .reset-btn.success-reset:hover {
+            background: #166534;
+            transform: translateY(-1px);
+        }
+
+        .reset-btn.error-reset {
+            background: #b91c1c;
+            color: #ffffff;
+        }
+
+        .reset-btn.error-reset:hover {
+            background: #991b1b;
+            transform: translateY(-1px);
+        }
+
+        /* Preview Table */
+        .preview-wrapper {
+            margin-top: 14px;
+            background: #ffffff;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            overflow-x: auto;
+            max-height: 220px;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .preview-table th {
+            background: #f0fdf4;
+            color: #166534;
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #bbf7d0;
+            font-weight: 600;
+        }
+
+        .preview-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        /* Modal de Ajuda / Guia */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            padding: 18px 24px;
+            background: #0f172a;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-modal-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .close-modal-btn:hover {
+            color: #ffffff;
+            background: #1e293b;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .modal-tab-btn {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .modal-tab-btn.active {
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .guide-section {
+            display: none;
+        }
+
+        .guide-section.active {
+            display: block;
+        }
+
+        .guide-intro {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 0.88rem;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+
+        .step-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .step-number {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .step-code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .step-details {
+            font-size: 0.88rem;
+            color: #334155;
+            line-height: 1.55;
+        }
+
+        .step-details code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .step-label {
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+            margin-top: 6px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout-wrapper">
+    <div class="container">
+        
+        <!-- HEADER PRINCIPAL -->
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1>Validador de Desafios</h1>
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">Oficina de Tratamento de Dados • UNICID</div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <!-- Status do Pyodide -->
+                <div class="py-status-badge loading" id="pyStatusBadge" title="Ambiente de Execução Python">
+                    <div class="py-status-dot"></div>
+                    <span id="pyStatusText">Inicializando Python...</span>
+                </div>
+
+                <button class="help-btn" id="openHelpBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    Guia de Código
+                </button>
+            </div>
+        </div>
+
+        <p class="subtitle">
+            Escreva e execute seu código de tratamento de dados diretamente na plataforma para obter validação imediata e feedback de execução.
+        </p>
+
+        <!-- SELETOR DE DESAFIOS (TABS) -->
+        <div class="challenge-selector">
+            <button class="challenge-btn active" data-challenge="1">
+                <span>Desafio 1: E-mails</span>
+                <span class="badge-pill">Nível 1</span>
+            </button>
+            <button class="challenge-btn" data-challenge="2">
+                <span>Desafio 2: Churrasco</span>
+                <span class="badge-pill" style="background:#fef3c7; color:#92400e;">Nível 2</span>
+            </button>
+            <button class="challenge-btn" data-challenge="3">
+                <span>Desafio 3: Presença</span>
+                <span class="badge-pill" style="background:#f3e8ff; color:#6b21a8;">Nível 3</span>
+            </button>
+        </div>
+
+        <!-- CARTÃO DE INSTRUÇÃO E ESPECIFICAÇÃO -->
+        <div class="instruction-card">
+            <h4 id="instructionTitle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+                Especificação Técnica — Desafio 1
+            </h4>
+            <div class="story-text" id="instructionStory">
+                <strong>Cenário:</strong> A lista de participantes do evento contém registros com inconsistências de formato: endereços vazios (nulos), espaços soltos nas extremidades e alternância de caracteres maiúsculos.
+            </div>
+            <div id="instructionText">
+                <ol class="instruction-steps">
+                    <li>Carregar o arquivo fonte: <code>df = pd.read_csv("desafio1/emails_brutos.csv")</code></li>
+                    <li>Tratar registros nulos: <code>df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</code></li>
+                    <li>Remover espaços excedentes: <code>df["email"] = df["email"].str.strip()</code></li>
+                    <li>Padronizar em minúsculas: <code>df["email"] = df["email"].str.lower()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- EDITOR DE CÓDIGO PYTHON INTERATIVO -->
+        <!-- ============================================================ -->
+        <div class="code-editor-container" id="editorContainer">
+            <div class="editor-top-bar">
+                <div class="editor-title">
+                    <div class="editor-dots">
+                        <div class="editor-dot red"></div>
+                        <div class="editor-dot yellow"></div>
+                        <div class="editor-dot green"></div>
+                    </div>
+                    <span>script_tratamento.py</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="tool-btn" onclick="openRawDataModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Ver Dados Brutos
+                    </button>
+                    <button class="tool-btn" onclick="resetEditorCode()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        Restaurar Código
+                    </button>
+                </div>
+            </div>
+
+            <div class="editor-workspace">
+                <div class="line-numbers" id="lineNumbers">
+                    <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div>
+                </div>
+                <textarea class="code-textarea" id="codeEditor" spellcheck="false" placeholder="Escreva o script Python para o tratamento dos dados..."></textarea>
+            </div>
+
+            <div class="editor-action-bar">
+                <div style="font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    <span>Ambiente Python nativo com suporte a bibliotecas de processamento de dados.</span>
+                </div>
+                <button class="run-code-btn" id="runCodeBtn" onclick="runPythonCode()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                    </svg>
+                    Executar e Validar Código
+                </button>
+            </div>
+
+            <!-- Console Log Output -->
+            <div class="console-box" id="consoleBox">
+                <div class="console-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                    Saída Standard (sys.stdout)
+                </div>
+                <div class="console-content" id="consoleContent"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TELAS DE LOADING E RESULTADOS -->
+        <!-- ============================================================ -->
+        <div class="loading-screen" id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <div class="loading-title">Executando Script e Inspecionando DataFrame...</div>
+            <div class="loading-subtitle" id="loadingFileName">Avaliando conformidade do tratamento de dados</div>
+            <div class="loading-bar-wrap">
+                <div class="loading-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- TELAS DE SUCESSO -->
+        <div class="result-screen success" id="successScreen">
+            <div class="status-badge-circle success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+            </div>
+            <h2 class="success-title">Validação Concluída com Sucesso</h2>
+            <p class="success-desc">O script atendeu a todos os critérios de limpeza e transformação especificados no desafio.</p>
+
+            <div id="successMetricContainer"></div>
+
+            <div class="checklist-box" id="successChecklist"></div>
+
+            <div style="font-weight: 700; color: #166534; font-size: 0.88rem; margin-top: 14px;">
+                Amostra Visual da Tabela Resultante:
+            </div>
+            <div class="preview-wrapper" id="successPreviewWrapper"></div>
+
+            <div class="result-actions">
+                <button class="reset-btn success-reset" onclick="resetValidator()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    Editar Código
+                </button>
+            </div>
+        </div>
+
+        <!-- TELA DE ERRO DE TRATAMENTO / SINTAXE -->
+        <div class="result-screen error" id="errorScreen">
+            <div class="status-badge-circle error">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h2 class="error-title">Inconformidade no Tratamento</h2>
+            <p class="error-desc" id="errorDescText">Foram identificadas inconsistências no resultado do processamento. Ajuste o código abaixo:</p>
+
+            <div class="error-list" id="errorList"></div>
+
+            <div id="pythonErrorContainer" style="display:none;">
+                <div style="font-size: 0.88rem; font-weight: 700; color: #991b1b; margin-top: 12px;">Detalhes do Rastro de Exceção (Python Traceback):</div>
+                <div class="python-error-box" id="pythonErrorText"></div>
+            </div>
+
+            <div class="result-actions">
+                <button class="reset-btn error-reset" onclick="resetValidator()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    Retornar ao Editor
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL DE EXIBIÇÃO DE DADOS BRUTOS (RAW DATA) -->
+<!-- ============================================================ -->
+<div class="raw-data-modal" id="rawDataModal">
+    <div class="raw-data-content">
+        <div class="raw-data-header">
+            <h3 id="rawDataTitle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                </svg>
+                Tabela de Entrada Bruta
+            </h3>
+            <button class="close-modal-btn" onclick="closeRawDataModal()">&times;</button>
+        </div>
+        <div class="raw-data-body" id="rawDataBody">
+            <!-- Tabela preenchida via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL DE GUIA E INSTRUÇÕES DE CÓDIGO -->
+<!-- ============================================================ -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" /></svg>
+                Guia de Sintaxe e Funções Python
+            </h3>
+            <button class="close-modal-btn" id="closeHelpBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" data-tab="1">Desafio 1 (E-mails)</button>
+                <button class="modal-tab-btn" data-tab="2">Desafio 2 (Churrasco)</button>
+                <button class="modal-tab-btn" data-tab="3">Desafio 3 (Presença)</button>
+            </div>
+
+            <!-- GUIA DESAFIO 1 -->
+            <div class="guide-section active" id="guide-1">
+                <div class="guide-intro">
+                    <strong>Estrutura de Código — Desafio 1:</strong> Utilize os métodos <code>fillna()</code>, <code>.str.strip()</code> e <code>.str.lower()</code> para higienizar a coluna de e-mails.
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
+                    <div class="step-code">import pandas as pd</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Carrega a biblioteca Pandas e atribui a ela o alias <code>pd</code> para manipulação de coleções tabulares de dados.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 2 • Ingestão do Arquivo CSV</span></div>
+                    <div class="step-code">df = pd.read_csv("desafio1/emails_brutos.csv")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Executa a leitura do arquivo bruto e constrói a estrutura tabular de DataFrame na memória.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 3 • Imputação de Dados Ausentes</span></div>
+                    <div class="step-code">df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Aplica a substituição de entradas nulas (<code>NaN</code>) pelo valor padrão especificado.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 4 • Remoção de Espaços nas Extremidades</span></div>
+                    <div class="step-code">df["email"] = df["email"].str.strip()</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        O método <code>.str.strip()</code> remove caracteres de espaço antes e depois de cada string registrada.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 5 • Normalização para Minúsculas</span></div>
+                    <div class="step-code">df["email"] = df["email"].str.lower()</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        O método <code>.str.lower()</code> converte todos os caracteres de texto para caixa baixa.
+                    </div>
+                </div>
+            </div>
+
+            <!-- GUIA DESAFIO 2 -->
+            <div class="guide-section" id="guide-2">
+                <div class="guide-intro">
+                    <strong>Estrutura de Código — Desafio 2:</strong> Realize a substituição do separador decimal, a conversão do tipo de dados (casting) para <code>float</code> e a imputação de dados numéricos ausentes.
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
+                    <div class="step-code">import pandas as pd</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Inicializa o Pandas para execução de operações vetorizadas na coluna de despesas.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 2 • Leitura da Planilha</span></div>
+                    <div class="step-code">df = pd.read_csv("desafio2/despesas_churrasco.csv")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Carrega a base de dados de despesas no objeto DataFrame.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 3 • Imputação de Valores Ausentes</span></div>
+                    <div class="step-code">df["valor"] = df["valor"].fillna("0.00")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Preenche registros nulos com o valor literal <code>"0.00"</code> para impedir falhas durante a conversão de tipo.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 4 • Substituição de Caracteres Decimais</span></div>
+                    <div class="step-code">df["valor"] = df["valor"].astype(str).str.replace(",", ".")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Garante o tipo string e substitui vírgulas (<code>,</code>) por pontos (<code>.</code>), conforme o padrão numérico internacional.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 5 • Conversão de Tipo (Type Casting)</span></div>
+                    <div class="step-code">df["valor"] = df["valor"].astype(float)</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Transforma o tipo da coluna de texto para ponto flutuante (<code>float</code>), permitindo operações de agregação como <code>.sum()</code>.
+                    </div>
+                </div>
+            </div>
+
+            <!-- GUIA DESAFIO 3 -->
+            <div class="guide-section" id="guide-3">
+                <div class="guide-intro">
+                    <strong>Estrutura de Código — Desafio 3:</strong> Trate campos de texto com <code>.upper()</code> e <code>.title()</code>, e execute a eliminação de registros redundantes via <code>drop_duplicates()</code>.
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
+                    <div class="step-code">import pandas as pd</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Carrega a biblioteca Pandas para manipulação da lista de presença.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 2 • Leitura da Lista de Presença</span></div>
+                    <div class="step-code">df = pd.read_csv("desafio3/lista_presenca.csv")</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Ingere a tabela contendo nomes de participantes e respectivas cidades.
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 3 • Normalização de Cidades em Maiúsculas</span></div>
+                    <div class="step-code">df["cidade"] = df["cidade"].str.strip().str.upper()</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Remove espaços e padroniza a escrita de todas as cidades em caixa alta (<code>SÃO PAULO</code>).
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 4 • Normalização de Nomes em Formato Título</span></div>
+                    <div class="step-code">df["nome"] = df["nome"].str.strip().str.title()</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Aplica a capitalização da primeira letra de cada palavra (<code>Lucas Silva</code>).
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-header"><span class="step-number">Passo 5 • Deduplicação de Registros</span></div>
+                    <div class="step-code">df = df.drop_duplicates()</div>
+                    <div class="step-details">
+                        <span class="step-label">Descrição:</span>
+                        Localiza e remove linhas inteiramente idênticas no DataFrame.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DATASETS BRUTOS EM EMBEDDED CSV
+    const RAW_DATASETS = {
+        1: `nome,email
+Lucas Silva,   LUCAS.SILVA@GMAIL.COM   
+Beatriz Souza,beatriz_tech@HOTMAIL.com 
+Matheus Santos,
+Gabriel Costa, gabriel.costa@unicid.br
+Maria Eduarda,  MARIA.EDUARDA@OUTLOOK.COM 
+Carlos Henrique,carlos.henrique@GMAIL.COM
+Ana Paula,
+Pedro Rocha,   PEDRO.ROCHA@EMPRESA.COM.BR
+Juliana Mendes, juliana_dev@HOTMAIL.COM   
+Rodrigo Lima,rodrigo.lima@unicid.br
+Fernanda Alves,   Fernanda.Alves@Yahoo.Com  
+Rafael Moreira,
+Camila Prado,camila_prado@GMAIL.COM 
+Thiago Martins, THIAGO.MARTINS@OUTLOOK.COM
+Larissa Ferreira, larissa.f@unicid.br`,
+
+        2: `amigo,item,valor
+Lucas Silva,Picanha e linguiça,"145,90"
+Beatriz Souza,Refrigerantes e sucos,"42,50"
+Matheus Santos,Carvão e gelo,
+Gabriel Costa,Pão de alho e queijo coalho,"35,00"
+Maria Eduarda,Farofa e vinagrete,"28,90"
+Carlos Henrique,Sobremesa e descartáveis,
+Ana Paula,Asas de frango temperadas,"58,40"
+Pedro Rocha,Copos e guardanapos,"16,50"
+Juliana Mendes,Carne alcatra,"110,00"
+Rodrigo Lima,Gelo filtrado extra,
+Fernanda Alves,Temperos e molhos,"22,80"
+Thiago Martins,Snacks e petiscos,"30,00"`,
+
+        3: `nome,cidade
+lucas silva,são paulo
+Beatriz Souza,   SÃO PAULO 
+Matheus Santos,Campinas
+Gabriel Costa,Santos
+Maria Eduarda,são paulo
+lucas silva,   São Paulo  
+Carlos Henrique,São Bernardo
+Ana Paula,   santos
+Beatriz Souza,SÃO PAULO
+Pedro Rocha,Campinas
+Juliana Mendes,   são paulo 
+Matheus Santos,   campinas 
+Rodrigo Lima,Guarulhos
+Fernanda Alves,São Paulo
+Gabriel Costa,  Santos`
+    };
+
+    // TEMPLATES INICIAIS DE CÓDIGO PYTHON (EDITOR LIMPO PARA O ALUNO DIGITAR DO ZERO)
+    const STARTER_CODES = {
+        1: "",
+        2: "",
+        3: ""
+    };
+
+    const challengeMeta = {
+        1: {
+            title: "Especificação Técnica — Desafio 1",
+            story: "<strong>Cenário:</strong> A lista de participantes do evento contém registros com inconsistências de formato: endereços vazios (nulos), espaços soltos nas extremidades e alternância de caracteres maiúsculos.",
+            steps: `
+                <ol class="instruction-steps">
+                    <li>Carregar o arquivo fonte: <code>df = pd.read_csv("desafio1/emails_brutos.csv")</code></li>
+                    <li>Tratar registros nulos: <code>df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</code></li>
+                    <li>Remover espaços excedentes: <code>df["email"] = df["email"].str.strip()</code></li>
+                    <li>Padronizar em minúsculas: <code>df["email"] = df["email"].str.lower()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
+                </ol>
+            `
+        },
+        2: {
+            title: "Especificação Técnica — Desafio 2",
+            story: "<strong>Cenário:</strong> A tabela de despesas contém valores nulos e números gravados em formato de texto utilizando vírgula como separador decimal.",
+            steps: `
+                <ol class="instruction-steps">
+                    <li>Carregar as despesas: <code>df = pd.read_csv("desafio2/despesas_churrasco.csv")</code></li>
+                    <li>Preencher valores ausentes: <code>df['valor'] = df['valor'].fillna('0.00')</code></li>
+                    <li>Substituir separador decimal: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code></li>
+                    <li>Converter para tipo flutuante: <code>df['valor'] = df['valor'].astype(float)</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
+                </ol>
+            `
+        },
+        3: {
+            title: "Especificação Técnica — Desafio 3",
+            story: "<strong>Cenário:</strong> A lista de presença possui registros duplicados decorrentes de envios múltiplos, além de nomes e cidades com formatações inconsistentes.",
+            steps: `
+                <ol class="instruction-steps">
+                    <li>Carregar a lista de presença: <code>df = pd.read_csv("desafio3/lista_presenca.csv")</code></li>
+                    <li>Padronizar cidades em maiúsculas: <code>df['cidade'] = df['cidade'].str.strip().str.upper()</code></li>
+                    <li>Padronizar nomes no formato título: <code>df['nome'] = df['nome'].str.strip().str.title()</code></li>
+                    <li>Eliminar registros duplicados: <code>df = df.drop_duplicates()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
+                </ol>
+            `
+        }
+    };
+
+    let currentChallenge = 1;
+    let pyodideInstance = null;
+    let pyodideReady = false;
+
+    // UI Elements
+    const buttons = document.querySelectorAll('.challenge-btn');
+    const editorContainer = document.getElementById('editorContainer');
+    const codeEditor = document.getElementById('codeEditor');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const consoleBox = document.getElementById('consoleBox');
+    const consoleContent = document.getElementById('consoleContent');
+    const runCodeBtn = document.getElementById('runCodeBtn');
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loadingFileName = document.getElementById('loadingFileName');
+    const successScreen = document.getElementById('successScreen');
+    const errorScreen = document.getElementById('errorScreen');
+    const successChecklist = document.getElementById('successChecklist');
+    const successMetricContainer = document.getElementById('successMetricContainer');
+    const successPreviewWrapper = document.getElementById('successPreviewWrapper');
+    const errorList = document.getElementById('errorList');
+    const pythonErrorContainer = document.getElementById('pythonErrorContainer');
+    const pythonErrorText = document.getElementById('pythonErrorText');
+    const errorDescText = document.getElementById('errorDescText');
+
+    const pyStatusBadge = document.getElementById('pyStatusBadge');
+    const pyStatusText = document.getElementById('pyStatusText');
+
+    const modal = document.getElementById('helpModal');
+    const openHelpBtn = document.getElementById('openHelpBtn');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    const instructionTitle = document.getElementById('instructionTitle');
+    const instructionStory = document.getElementById('instructionStory');
+    const instructionText = document.getElementById('instructionText');
+
+    const modalTabBtns = document.querySelectorAll('.modal-tab-btn');
+    const guideSections = document.querySelectorAll('.guide-section');
+
+    // Inicialização do Pyodide e Sistema de Arquivos Virtual
+    function setupVirtualFilesystem() {
+        if (!pyodideInstance) return;
+        const bases = ['/', '/home/pyodide'];
+        bases.forEach(base => {
+            [1, 2, 3].forEach(num => {
+                const dirPath = (base === '/' ? '' : base) + '/desafio' + num;
+                try { pyodideInstance.FS.mkdirTree(dirPath); } catch(e){}
+            });
+        });
+
+        // Escrever arquivos brutos em todas as rotas possíveis (relativas e absolutas)
+        pyodideInstance.FS.writeFile('/desafio1/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio1/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/home/pyodide/emails_brutos.csv', RAW_DATASETS[1]);
+
+        pyodideInstance.FS.writeFile('/desafio2/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio2/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/home/pyodide/despesas_churrasco.csv', RAW_DATASETS[2]);
+
+        pyodideInstance.FS.writeFile('/desafio3/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio3/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/home/pyodide/lista_presenca.csv', RAW_DATASETS[3]);
+    }
+
+    async function initPyodideEngine() {
+        try {
+            if (typeof loadPyodide === 'undefined') {
+                throw new Error("Pyodide CDN offline");
+            }
+            pyodideInstance = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/"
+            });
+            
+            pyStatusText.innerText = "Carregando Pandas...";
+            await pyodideInstance.loadPackage(['pandas']);
+
+            setupVirtualFilesystem();
+
+            pyodideReady = true;
+            pyStatusBadge.className = "py-status-badge ready";
+            pyStatusText.innerText = "Python & Pandas Ativo";
+        } catch (err) {
+            console.warn("Pyodide init warning:", err);
+            pyStatusBadge.className = "py-status-badge error";
+            pyStatusText.innerText = "Erro ao Carregar Python";
+        }
+    }
+    initPyodideEngine();
+
+    // Editor de código: Atualização das linhas e Tab Key
+    function updateLineNumbers() {
+        const lines = codeEditor.value.split('\n');
+        let numsHtml = '';
+        for (let i = 1; i <= Math.max(lines.length, 5); i++) {
+            numsHtml += `<div>${i}</div>`;
+        }
+        lineNumbers.innerHTML = numsHtml;
+    }
+
+    codeEditor.addEventListener('input', updateLineNumbers);
+
+    codeEditor.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+            updateLineNumbers();
+        }
+    });
+
+    function resetEditorCode() {
+        codeEditor.value = STARTER_CODES[currentChallenge];
+        updateLineNumbers();
+        consoleBox.style.display = 'none';
+        consoleContent.innerText = '';
+        if (pyodideInstance) {
+            try {
+                pyodideInstance.runPython("if 'df' in globals(): del globals()['df']");
+            } catch(e){}
+        }
+    }
+
+    // Modal de Dados Brutos
+    function openRawDataModal() {
+        const rawTitle = document.getElementById('rawDataTitle');
+        const rawBody = document.getElementById('rawDataBody');
+        
+        const titles = {
+            1: "Tabela Bruta do Desafio 1 (emails_brutos.csv)",
+            2: "Tabela Bruta do Desafio 2 (despesas_churrasco.csv)",
+            3: "Tabela Bruta do Desafio 3 (lista_presenca.csv)"
+        };
+
+        rawTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg> ` + titles[currentChallenge];
+        const parsed = parseCSV(RAW_DATASETS[currentChallenge]);
+
+        let tableHtml = `
+            <table class="preview-table">
+                <thead><tr>${parsed.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                <tbody>
+                    ${parsed.rows.map(r => `<tr>${parsed.headers.map(h => `<td>${r[h] === "" ? "<span style='color:#ef4444;font-style:italic;'>(vazio)</span>" : r[h]}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        `;
+        rawBody.innerHTML = tableHtml;
+        document.getElementById('rawDataModal').style.display = 'flex';
+    }
+
+    function closeRawDataModal() {
+        document.getElementById('rawDataModal').style.display = 'none';
+    }
+
+    // Modal Tabs
+    function switchModalTab(challengeNum) {
+        modalTabBtns.forEach(b => {
+            b.classList.toggle('active', parseInt(b.getAttribute('data-tab')) === challengeNum);
+        });
+        guideSections.forEach(sec => {
+            sec.classList.toggle('active', sec.id === `guide-${challengeNum}`);
+        });
+    }
+
+    modalTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const num = parseInt(btn.getAttribute('data-tab'));
+            switchModalTab(num);
+        });
+    });
+
+    function openHelpForCurrent() {
+        switchModalTab(currentChallenge);
+        modal.style.display = 'flex';
+    }
+
+    openHelpBtn.addEventListener('click', openHelpForCurrent);
+    closeHelpBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    function resetValidator() {
+        loadingScreen.style.display = 'none';
+        successScreen.style.display = 'none';
+        errorScreen.style.display = 'none';
+        editorContainer.style.display = 'block';
+    }
+
+    // Main Screen Challenge Tabs Switch
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentChallenge = parseInt(btn.getAttribute('data-challenge'));
+            
+            // Update instruction card
+            instructionTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> ` + challengeMeta[currentChallenge].title;
+            instructionStory.innerHTML = challengeMeta[currentChallenge].story;
+            instructionText.innerHTML = challengeMeta[currentChallenge].steps;
+            
+            resetEditorCode();
+            resetValidator();
+        });
+    });
+
+    // EXECUÇÃO DO CÓDIGO PYTHON VIA PYODIDE
+    async function runPythonCode() {
+        if (!pyodideReady) {
+            showErrorScreen(["O motor Python ainda está sendo carregado pelo navegador. Aguarde alguns instantes."], "Inicialização do Python em andamento");
+            return;
+        }
+
+        const userCode = codeEditor.value.trim();
+        if (!userCode) {
+            showErrorScreen(["O editor de código está vazio. Insira as instruções de tratamento antes de executar."]);
+            return;
+        }
+
+        // MOSTRAR SPINNER
+        editorContainer.style.display = 'none';
+        loadingScreen.style.display = 'block';
+        loadingFileName.innerText = `Processando script Python do Desafio ${currentChallenge}...`;
+
+        consoleContent.innerText = "";
+        consoleBox.style.display = "none";
+
+        try {
+            // Garantir que os arquivos virtuais estejam disponíveis no FS do Pyodide
+            setupVirtualFilesystem();
+
+            // Definir o código do aluno no namespace do Pyodide
+            pyodideInstance.globals.set('_user_code_input', userCode);
+
+            // Executar script Python unificado para processar e capturar stdout/DataFrame
+            await pyodideInstance.runPythonAsync(`
+import sys
+import io
+
+# Limpar 'df' antes de executar
+if 'df' in globals():
+    del globals()['df']
+
+sys.stdout = io.StringIO()
+
+# Executar o código digitado no escopo global
+exec(_user_code_input, globals())
+
+_stdout_res = sys.stdout.getvalue()
+
+_csv_res = ""
+if 'df' in globals() and globals()['df'] is not None:
+    _csv_res = globals()['df'].to_csv(index=False)
+`);
+
+            const stdoutText = pyodideInstance.globals.get('_stdout_res') || "";
+            if (stdoutText && stdoutText.trim() !== "") {
+                consoleContent.innerText = stdoutText;
+                consoleBox.style.display = "block";
+            }
+
+            const csvOutput = pyodideInstance.globals.get('_csv_res') || "";
+
+            if (!csvOutput || csvOutput.trim() === "") {
+                showErrorScreen([
+                    "O código foi executado sem exceções, contudo a variável <code>df</code> não foi atribuída ou está vazia.",
+                    "Certifique-se de salvar o resultado na variável <code>df</code> (ex: <code>df = pd.read_csv(...)</code>)."
+                ]);
+                return;
+            }
+
+            // Validar os dados tratados
+            setTimeout(() => {
+                validateCSV(csvOutput, currentChallenge);
+            }, 300);
+
+        } catch (pyErr) {
+            loadingScreen.style.display = 'none';
+            const friendlyErr = formatPythonError(pyErr);
+            showErrorScreen(friendlyErr.hints, friendlyErr.title, friendlyErr.raw);
+        }
+    }
+
+    // FORMATADOR E TRADUTOR DIDÁTICO DE ERROS PYTHON
+    function formatPythonError(err) {
+        const errStr = err ? err.toString() : "Exceção não identificada";
+        let title = "Erro de Execução no Código Python";
+        let hints = [];
+
+        if (errStr.includes("SyntaxError") || errStr.includes("IndentationError")) {
+            title = "Erro de Sintaxe ou Indentação";
+            hints.push("O interpretador Python encontrou uma falha na estrutura sintática do código.");
+            hints.push("Verifique o fechamento de parênteses <code>()</code>, aspas <code>'</code> ou <code>\"</code> e confirme se não há palavras-chave digitadas incorretamente.");
+        } 
+        else if (errStr.includes("KeyError")) {
+            title = "Erro de Chave de Coluna (KeyError)";
+            hints.push("A coluna especificada não existe na estrutura do DataFrame.");
+            hints.push("Verifique se o nome do campo foi digitado corretamente (ex: <code>df['email']</code> ou <code>df['valor']</code>).");
+        } 
+        else if (errStr.includes("AttributeError")) {
+            title = "Erro de Atributo (Ausência de .str)";
+            hints.push("Tentativa de chamar um método de string em uma estrutura do Pandas sem utilizar o acessor de texto.");
+            hints.push("Para funções de texto em colunas do Pandas, utilize o acessor <code>.str</code> (ex: <code>df['coluna'].str.strip()</code>).");
+        } 
+        else if (errStr.includes("NameError")) {
+            title = "Erro de Nome de Variável (NameError)";
+            hints.push("Identificador ou variável utilizada sem declaração prévia.");
+            hints.push("Certifique-se de importar o módulo (<code>import pandas as pd</code>) e carregar os dados na variável <code>df</code>.");
+        } 
+        else if (errStr.includes("TypeError")) {
+            title = "Erro de Incompatibilidade de Tipo (TypeError)";
+            hints.push("Operação realizada entre tipos de dados incompatíveis.");
+            hints.push("Utilize <code>.astype(float)</code> para efetuar o casting numérico apropriado.");
+        } 
+        else if (errStr.includes("FileNotFoundError")) {
+            title = "Arquivo Não Encontrado (FileNotFoundError)";
+            hints.push("Caminho do arquivo incorreto informado no método de ingestão.");
+            hints.push(`Informe o caminho <code>"desafio${currentChallenge}/..."</code> no método <code>pd.read_csv(...)</code>.`);
+        } 
+        else {
+            hints.push("Ocorreu uma exceção não tratada durante o processamento das instruções.");
+            hints.push("Consulte o painel 'Guia de Código' para verificar a estrutura correta.");
+        }
+
+        return { title, hints, raw: errStr };
+    }
+
+    // CSV Parser
+    function parseCSV(text) {
+        const lines = text.trim().split(/\r?\n/);
+        if (lines.length === 0) return { headers: [], rows: [] };
+
+        const delimiter = lines[0].includes(';') ? ';' : ',';
+        const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, ''));
+        const rows = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
+            let row = {};
+            headers.forEach((h, idx) => {
+                row[h] = values[idx] !== undefined ? values[idx] : "";
+            });
+            rows.push(row);
+        }
+        return { headers, rows };
+    }
+
+    // Validation Logic
+    function validateCSV(text, challenge) {
+        const data = parseCSV(text);
+        if (data.headers.length === 0 || data.rows.length === 0) {
+            showErrorScreen(["O arquivo CSV resultante está vazio ou com estrutura inválida."]);
+            return;
+        }
+
+        const errors = [];
+        let successDetails = [];
+        let extraBadge = "";
+
+        if (challenge === 1) {
+            // DESAFIO 1: E-MAILS
+            const emailKey = data.headers.find(h => h.toLowerCase() === 'email');
+            
+            if (!emailKey) {
+                errors.push("Coluna de e-mail não identificada no resultado. Nomeie a coluna como <code>email</code>.");
+            } else {
+                let hasSpaces = false;
+                let hasUpper = false;
+                let hasEmpty = false;
+                let hasPlaceholder = false;
+
+                data.rows.forEach(r => {
+                    const rawVal = r[emailKey];
+                    if (!rawVal || rawVal === "" || rawVal === "NaN" || rawVal === "nan" || rawVal === "None") {
+                        hasEmpty = true;
+                    } else {
+                        if (rawVal !== rawVal.trim()) hasSpaces = true;
+                        if (rawVal !== rawVal.toLowerCase()) hasUpper = true;
+                        if (rawVal === "email_nao_informado@dominio.com") hasPlaceholder = true;
+                    }
+                });
+
+                if (hasEmpty) {
+                    errors.push("Persistência de valores vazios. Aplique <code>df['email'] = df['email'].fillna('email_nao_informado@dominio.com')</code>.");
+                }
+                if (hasSpaces) {
+                    errors.push("Persistência de espaços em branco nas extremidades. Aplique <code>df['email'] = df['email'].str.strip()</code>.");
+                }
+                if (hasUpper) {
+                    errors.push("Persistência de caracteres em maiúsculas. Aplique <code>df['email'] = df['email'].str.lower()</code>.");
+                }
+                if (!hasEmpty && !hasPlaceholder) {
+                    errors.push("Valores nulos devem ser imputados com o literal <code>email_nao_informado@dominio.com</code>.");
+                }
+
+                if (errors.length === 0) {
+                    successDetails = [
+                        `Todos os ${data.rows.length} registros de e-mail tiveram espaços excedentes removidos.`,
+                        `Padronização completa de caracteres em caixa baixa (minúsculas).`,
+                        `Imputação de valores nulos executada com a string padrão de segurança.`
+                    ];
+                }
+            }
+        }
+        else if (challenge === 2) {
+            // DESAFIO 2: CHURRASCO
+            const valorKey = data.headers.find(h => h.toLowerCase() === 'valor');
+
+            if (!valorKey) {
+                errors.push("Coluna de valor não encontrada. Nomeie a coluna como <code>valor</code>.");
+            } else {
+                let hasCommas = false;
+                let hasEmpty = false;
+                let notNumber = false;
+                let totalSoma = 0;
+
+                data.rows.forEach(r => {
+                    const rawVal = r[valorKey];
+                    if (rawVal === "" || rawVal === null || rawVal === undefined) {
+                        hasEmpty = true;
+                    } else {
+                        if (typeof rawVal === 'string' && rawVal.includes(',')) hasCommas = true;
+                        const num = parseFloat(rawVal);
+                        if (isNaN(num)) {
+                            notNumber = true;
+                        } else {
+                            totalSoma += num;
+                        }
+                    }
+                });
+
+                if (hasEmpty) {
+                    errors.push("Valores não informados pendentes. Substitua por zero: <code>df['valor'] = df['valor'].fillna('0.00')</code>.");
+                }
+                if (hasCommas) {
+                    errors.push("Separador decimal incorreto (vírgula). Substitua por ponto: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code>.");
+                }
+                if (notNumber) {
+                    errors.push("Coluna não convertida para o tipo numérico. Realize o casting: <code>df['valor'] = df['valor'].astype(float)</code>.");
+                }
+
+                if (errors.length === 0) {
+                    extraBadge = `<div class="metric-badge">Total Agregado: R$ ${totalSoma.toFixed(2)}</div>`;
+                    successDetails = [
+                        "Substituição de separadores decimais realizada com sucesso.",
+                        "Imputação de valores numéricos ausentes por zero (0.00).",
+                        "Conversão de tipo executada com sucesso para ponto flutuante (float).",
+                        "Agregação numérica habilitada sem ocorrência de exceções."
+                    ];
+                }
+            }
+        }
+        else if (challenge === 3) {
+            // DESAFIO 3: LISTA DE PRESENÇA (DUPLICATAS)
+            const nomeKey = data.headers.find(h => h.toLowerCase() === 'nome');
+            const cidadeKey = data.headers.find(h => h.toLowerCase() === 'cidade');
+
+            if (!nomeKey || !cidadeKey) {
+                errors.push("Colunas <code>nome</code> e <code>cidade</code> não localizadas no DataFrame.");
+            } else {
+                let hasSpaces = false;
+                let cityNotUpper = false;
+
+                data.rows.forEach(r => {
+                    const nome = r[nomeKey];
+                    const cidade = r[cidadeKey];
+                    if (nome !== nome.trim() || cidade !== cidade.trim()) hasSpaces = true;
+                    if (cidade !== cidade.toUpperCase()) cityNotUpper = true;
+                });
+
+                const rowsStr = data.rows.map(r => `${r[nomeKey].toLowerCase()}|${r[cidadeKey].toLowerCase()}`);
+                const uniqueRows = new Set(rowsStr);
+                const hasDuplicates = uniqueRows.size !== rowsStr.length;
+
+                if (hasSpaces) {
+                    errors.push("Persistência de espaços em branco nas extremidades dos textos. Utilizar <code>.str.strip()</code>.");
+                }
+                if (cityNotUpper) {
+                    errors.push("A coluna cidade deve ser padronizada em letras maiúsculas. Utilizar <code>df['cidade'] = df['cidade'].str.upper()</code>.");
+                }
+                if (hasDuplicates || data.rows.length > 12) {
+                    errors.push("Registros duplicados ainda presentes na tabela. Remover redundâncias com <code>df = df.drop_duplicates()</code>.");
+                }
+
+                if (errors.length === 0) {
+                    extraBadge = `<div class="metric-badge">Registros Únicos Confirmados: ${data.rows.length} participantes</div>`;
+                    successDetails = [
+                        `Remoção de duplicatas efetuada (tabela consolidada em ${data.rows.length} registros únicos).`,
+                        "Nomes padronizados em formato título (capitalização inicial).",
+                        "Cidades 100% normalizadas em caixa alta (maiúsculas)."
+                    ];
+                }
+            }
+        }
+
+        loadingScreen.style.display = 'none';
+
+        if (errors.length > 0) {
+            showErrorScreen(errors);
+        } else {
+            showSuccessScreen(successDetails, data.rows.slice(0, 6), data.headers, extraBadge);
+            triggerCelebration();
+        }
+    }
+
+    // EXIBIR TELA DE SUCESSO
+    function showSuccessScreen(items, previewRows, headers, extraBadge) {
+        editorContainer.style.display = 'none';
+        loadingScreen.style.display = 'none';
+        errorScreen.style.display = 'none';
+        successScreen.style.display = 'block';
+
+        successMetricContainer.innerHTML = extraBadge || '';
+
+        let checklistHtml = '';
+        items.forEach(item => {
+            checklistHtml += `
+                <div class="checklist-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>${item}</span>
+                </div>
+            `;
+        });
+        successChecklist.innerHTML = checklistHtml;
+
+        if (previewRows && previewRows.length > 0) {
+            let tableHtml = `
+                <table class="preview-table">
+                    <thead>
+                        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${previewRows.map(row => `<tr>${headers.map(h => `<td>${row[h]}</td>`).join('')}</tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+            successPreviewWrapper.innerHTML = tableHtml;
+            successPreviewWrapper.style.display = 'block';
+        } else {
+            successPreviewWrapper.style.display = 'none';
+        }
+    }
+
+    // EXIBIR TELA DE ERRO
+    function showErrorScreen(errors, customTitle, rawTraceback) {
+        editorContainer.style.display = 'none';
+        loadingScreen.style.display = 'none';
+        successScreen.style.display = 'none';
+        errorScreen.style.display = 'block';
+
+        if (customTitle) {
+            errorDescText.innerText = customTitle;
+        } else {
+            errorDescText.innerText = "Foram identificadas inconsistências no resultado do processamento. Ajuste o código abaixo:";
+        }
+
+        let errorsHtml = '';
+        errors.forEach(e => {
+            errorsHtml += `
+                <div class="error-card-item">
+                    ${e}
+                </div>
+            `;
+        });
+        errorList.innerHTML = errorsHtml;
+
+        if (rawTraceback) {
+            pythonErrorText.innerText = rawTraceback;
+            pythonErrorContainer.style.display = 'block';
+        } else {
+            pythonErrorContainer.style.display = 'none';
+        }
+    }
+
+    function triggerCelebration() {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    }
+
+    // Inicializar template de código
+    resetEditorCode();
+</script>
+
+</body>
+</html>
