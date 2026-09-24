@@ -6,9 +6,11 @@
     <title>Validador de Desafios - Oficina de Tratamento de Dados</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Confetti Library para animação de celebração -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Pyodide: Python em WebAssembly para execução no navegador -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
     <style>
         :root {
             --primary: #0f172a;
@@ -46,23 +48,22 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 24px 24px;
         }
 
         .layout-wrapper {
             width: 100%;
-            max-width: 740px;
+            max-width: 860px;
         }
 
         .container {
             background: var(--card-bg);
-            border-radius: 20px;
+            border-radius: 16px;
             border: 1px solid var(--border);
-            padding: 36px 32px;
+            padding: 32px 28px;
             box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-            text-align: center;
         }
 
         .header-container {
@@ -70,6 +71,8 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .logo-area {
@@ -80,46 +83,85 @@
         }
 
         .logo-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+            border: 1px solid #334155;
+            flex-shrink: 0;
         }
 
         h1 {
-            font-size: 1.55rem;
+            font-size: 1.45rem;
             font-weight: 700;
             margin: 0;
             color: var(--primary);
             letter-spacing: -0.02em;
         }
 
-        .header-tag {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--accent);
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .py-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #334155;
+            transition: all 0.3s ease;
+        }
+
+        .py-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e2e8f0;
+        }
+
+        .py-status-badge.loading .py-status-dot {
+            background: #f59e0b;
+            animation: pulse 1.2s infinite;
+        }
+
+        .py-status-badge.ready .py-status-dot {
+            background: #10b981;
+            box-shadow: 0 0 6px #10b981;
+        }
+
+        .py-status-badge.error .py-status-dot {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
         }
 
         .help-btn {
-            background: #f8fafc;
+            background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             color: var(--text-main);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 9px 16px;
+            padding: 8px 14px;
             font-family: inherit;
-            font-size: 0.88rem;
+            font-size: 0.85rem;
             font-weight: 600;
         }
 
@@ -127,13 +169,12 @@
             background: var(--accent-soft);
             color: var(--accent);
             border-color: #bfdbfe;
-            transform: translateY(-1px);
         }
 
         p.subtitle {
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             color: var(--text-muted);
-            margin: 14px 0 24px 0;
+            margin: 4px 0 20px 0;
             text-align: left;
             line-height: 1.5;
         }
@@ -142,18 +183,18 @@
         .challenge-selector {
             display: flex;
             background: #f1f5f9;
-            padding: 5px;
-            border-radius: 12px;
+            padding: 4px;
+            border-radius: 10px;
             gap: 6px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .challenge-btn {
             flex: 1;
             background: transparent;
             border: none;
-            padding: 10px 8px;
-            border-radius: 8px;
+            padding: 9px 8px;
+            border-radius: 7px;
             font-family: 'Inter', sans-serif;
             font-weight: 500;
             font-size: 0.85rem;
@@ -174,13 +215,13 @@
             background: #ffffff;
             color: var(--accent);
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
         }
 
         .challenge-btn .badge-pill {
             font-size: 0.7rem;
             padding: 2px 7px;
-            border-radius: 10px;
+            border-radius: 6px;
             background: var(--badge-bg);
             color: var(--badge-text);
             font-weight: 700;
@@ -190,9 +231,9 @@
         .instruction-card {
             background: #f8fafc;
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px 22px;
-            margin-bottom: 24px;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
             text-align: left;
             font-size: 0.9rem;
             position: relative;
@@ -211,7 +252,7 @@
 
         .instruction-card h4 {
             margin: 0 0 8px 0;
-            font-size: 0.98rem;
+            font-size: 0.95rem;
             color: var(--primary);
             display: flex;
             align-items: center;
@@ -240,77 +281,266 @@
             font-family: 'JetBrains Mono', monospace;
             background: #e2e8f0;
             padding: 2px 6px;
-            border-radius: 5px;
+            border-radius: 4px;
             font-size: 0.82em;
             color: var(--primary);
         }
 
-        /* Drag & Drop Zone */
-        .drop-zone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 16px;
-            padding: 40px 20px;
-            background: #ffffff;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            position: relative;
+        /* ============================================================ */
+        /* CODE EDITOR SECTION */
+        /* ============================================================ */
+        .code-editor-container {
+            border: 1px solid #334155;
+            border-radius: 12px;
+            background: #0f172a;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+            text-align: left;
+            margin-bottom: 20px;
         }
 
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-            transform: translateY(-2px);
+        .editor-top-bar {
+            background: #1e293b;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .drop-zone input[type="file"] {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .drop-zone-icon {
-            color: var(--accent);
-            margin-bottom: 12px;
-            transition: transform 0.2s;
-        }
-
-        .drop-zone:hover .drop-zone-icon {
-            transform: translateY(-3px);
-        }
-
-        .drop-zone-title {
-            font-size: 1.05rem;
+        .editor-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f8fafc;
+            font-size: 0.84rem;
             font-weight: 600;
-            color: var(--text-main);
-            margin-bottom: 4px;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        .drop-zone-desc {
+        .editor-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .editor-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .editor-dot.red { background: #ff5f56; }
+        .editor-dot.yellow { background: #ffbd2e; }
+        .editor-dot.green { background: #27c93f; }
+
+        .editor-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #475569;
+            color: #ffffff;
+        }
+
+        .editor-workspace {
+            display: flex;
+            min-height: 240px;
+            position: relative;
+            background: #0f172a;
+        }
+
+        .line-numbers {
+            width: 44px;
+            background: #0b1120;
+            color: #475569;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
-            color: var(--text-muted);
+            line-height: 1.5;
+            padding: 14px 0;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #1e293b;
+        }
+
+        .line-numbers div {
+            padding-right: 10px;
+        }
+
+        .code-textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #f1f5f9;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            padding: 14px;
+            resize: vertical;
+            outline: none;
+            min-height: 240px;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .editor-action-bar {
+            background: #1e293b;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .run-code-btn {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s;
+        }
+
+        .run-code-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+
+        .run-code-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Console Log Output */
+        .console-box {
+            background: #090d16;
+            border-top: 1px solid #1e293b;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #38bdf8;
+            max-height: 140px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .console-header {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 6px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .console-content {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #cbd5e1;
+        }
+
+        /* Modal para Dados Brutos */
+        .raw-data-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .raw-data-content {
+            background: #ffffff;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        .raw-data-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .raw-data-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .raw-data-body {
+            padding: 20px;
+            overflow-y: auto;
         }
 
         /* ============================================================ */
-        /* TELA DE LOADING */
+        /* TELAS DE LOADING E RESULTADOS */
         /* ============================================================ */
         .loading-screen {
             display: none;
             padding: 45px 20px;
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
+            border-radius: 12px;
             text-align: center;
             animation: fadeIn 0.25s ease;
+            margin-bottom: 20px;
         }
 
         .loading-spinner {
-            width: 52px;
-            height: 52px;
-            border: 4px solid #e2e8f0;
+            width: 44px;
+            height: 44px;
+            border: 3px solid #e2e8f0;
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.85s linear infinite;
@@ -322,7 +552,7 @@
         }
 
         .loading-title {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: 6px;
@@ -335,7 +565,7 @@
 
         .loading-bar-wrap {
             width: 240px;
-            height: 6px;
+            height: 5px;
             background: #e2e8f0;
             border-radius: 4px;
             margin: 16px auto 0 auto;
@@ -357,66 +587,51 @@
             100% { width: 100%; }
         }
 
-        /* ============================================================ */
-        /* TELAS DE RESULTADO (SUCESSO OU ERRO) */
-        /* ============================================================ */
         .result-screen {
             display: none;
-            border-radius: 16px;
-            padding: 30px 24px;
+            border-radius: 14px;
+            padding: 28px 24px;
             text-align: left;
-            animation: fadeIn 0.35s ease;
+            animation: fadeIn 0.3s ease;
+            margin-bottom: 20px;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* TELA DE SUCESSO (VERDINHO) */
+        /* TELA DE SUCESSO */
         .result-screen.success {
             background: var(--success-bg);
-            border: 2px solid var(--success-border);
+            border: 1px solid var(--success-border);
         }
 
         .status-badge-circle {
-            width: 60px;
-            height: 60px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .status-badge-circle.success {
             background: #dcfce7;
             color: var(--success);
-            box-shadow: 0 0 0 6px #f0fdf4, 0 4px 12px rgba(22, 163, 74, 0.2);
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 0 5px #f0fdf4, 0 4px 12px rgba(22, 163, 74, 0.15);
         }
 
         .status-badge-circle.error {
             background: #fee2e2;
             color: var(--error);
-            box-shadow: 0 0 0 6px #fef2f2, 0 4px 12px rgba(220, 38, 38, 0.2);
-            animation: shake 0.4s ease;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
+            box-shadow: 0 0 0 5px #fef2f2, 0 4px 12px rgba(220, 38, 38, 0.15);
         }
 
         .success-title {
             color: var(--success-dark);
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 800;
             margin: 0 0 6px 0;
             display: flex;
@@ -427,7 +642,7 @@
 
         .success-desc {
             color: var(--success);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 500;
             margin: 0 0 16px 0;
             line-height: 1.5;
@@ -436,7 +651,7 @@
         .checklist-box {
             background: #ffffff;
             border: 1px solid #bbf7d0;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 14px 16px;
             margin-bottom: 16px;
         }
@@ -445,7 +660,7 @@
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: #14532d;
             margin-bottom: 8px;
             line-height: 1.45;
@@ -467,23 +682,23 @@
             gap: 8px;
             background: #15803d;
             color: #ffffff;
-            padding: 8px 16px;
-            border-radius: 10px;
+            padding: 7px 14px;
+            border-radius: 8px;
             font-weight: 700;
-            font-size: 0.98rem;
+            font-size: 0.92rem;
             margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(21, 128, 61, 0.25);
+            box-shadow: 0 2px 6px rgba(21, 128, 61, 0.2);
         }
 
-        /* TELA DE ERRO (VERMELHO) */
+        /* TELA DE ERRO */
         .result-screen.error {
             background: var(--error-bg);
-            border: 2px solid var(--error-border);
+            border: 1px solid var(--error-border);
         }
 
         .error-title {
             color: var(--error-dark);
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 800;
             margin: 0 0 6px 0;
             letter-spacing: -0.01em;
@@ -491,7 +706,7 @@
 
         .error-desc {
             color: var(--error);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 600;
             margin: 0 0 16px 0;
             line-height: 1.5;
@@ -508,9 +723,9 @@
             background: #ffffff;
             border: 1px solid #fecaca;
             border-left: 4px solid var(--error);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 12px 14px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: #7f1d1d;
             line-height: 1.5;
         }
@@ -525,6 +740,19 @@
             font-weight: 600;
         }
 
+        .python-error-box {
+            background: #1e1e1e;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 14px;
+            color: #f87171;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
         /* Action Buttons on Result Screens */
         .result-actions {
             display: flex;
@@ -534,10 +762,10 @@
 
         .reset-btn {
             border: none;
-            padding: 11px 20px;
-            border-radius: 10px;
+            padding: 10px 18px;
+            border-radius: 8px;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
@@ -571,9 +799,9 @@
             margin-top: 14px;
             background: #ffffff;
             border: 1px solid #bbf7d0;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow-x: auto;
-            max-height: 200px;
+            max-height: 220px;
         }
 
         .preview-table {
@@ -598,120 +826,98 @@
             color: #334155;
         }
 
-        /* ============================================================ */
-        /* MODAL DE PASSO A PASSO LINHA POR LINHA */
-        /* ============================================================ */
+        /* Modal de Ajuda / Guia */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(6px);
             display: none;
-            justify-content: center;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
             align-items: center;
-            z-index: 1000;
-            padding: 16px;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .modal {
-            background: var(--card-bg);
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
             width: 100%;
-            max-width: 820px;
-            max-height: 90vh;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-            overflow-y: auto;
-            border: 1px solid var(--border);
+            max-width: 680px;
+            max-height: 88vh;
             display: flex;
             flex-direction: column;
-            animation: modalScale 0.25s ease;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: modalFadeIn 0.2s ease;
         }
 
-        @keyframes modalScale {
-            from { opacity: 0; transform: scale(0.96); }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.97); }
             to { opacity: 1; transform: scale(1); }
         }
 
         .modal-header {
-            padding: 20px 28px;
-            border-bottom: 1px solid var(--border);
+            padding: 18px 24px;
+            background: #0f172a;
+            color: #ffffff;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            background: var(--card-bg);
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            z-index: 10;
+            justify-content: space-between;
         }
 
-        .modal-header h2 {
+        .modal-header h3 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: var(--primary);
         }
 
-        .modal-close {
-            background: #f1f5f9;
+        .close-modal-btn {
+            background: transparent;
             border: none;
+            color: #94a3b8;
+            font-size: 1.4rem;
             cursor: pointer;
-            color: var(--text-muted);
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: #fee2e2;
-            color: var(--error);
-        }
-
-        .modal-content {
-            padding: 24px 28px 40px 28px;
-            color: var(--text-main);
-            font-size: 0.93rem;
-            line-height: 1.6;
-        }
-
-        .modal-tab-bar {
-            display: flex;
-            background: #f1f5f9;
+            line-height: 1;
             padding: 4px;
-            border-radius: 10px;
-            gap: 6px;
-            margin-bottom: 22px;
+            border-radius: 6px;
+        }
+
+        .close-modal-btn:hover {
+            color: #ffffff;
+            background: #1e293b;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
         }
 
         .modal-tab-btn {
-            flex: 1;
-            padding: 8px 12px;
-            background: transparent;
+            background: #f1f5f9;
             border: none;
+            padding: 8px 14px;
             border-radius: 6px;
-            font-family: inherit;
             font-size: 0.85rem;
             font-weight: 600;
-            cursor: pointer;
             color: var(--text-muted);
-            transition: all 0.2s ease;
-        }
-
-        .modal-tab-btn:hover {
-            color: var(--text-main);
+            cursor: pointer;
         }
 
         .modal-tab-btn.active {
-            background: #ffffff;
-            color: var(--accent);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            background: var(--accent);
+            color: #ffffff;
         }
 
         .guide-section {
@@ -725,97 +931,68 @@
         .guide-intro {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 12px 16px;
+            margin-bottom: 18px;
             font-size: 0.88rem;
             color: #1e40af;
-            margin-bottom: 20px;
             line-height: 1.5;
         }
 
         .step-card {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 18px;
-            margin-bottom: 16px;
-            background: #ffffff;
-            transition: border-color 0.2s;
-        }
-
-        .step-card:hover {
-            border-color: #cbd5e1;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
         }
 
         .step-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .step-number {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            background: #f1f5f9;
-            color: var(--text-main);
-            padding: 3px 8px;
-            border-radius: 6px;
-        }
-
-        .step-code {
-            background: #0f172a;
-            color: #f8fafc;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.88rem;
-            margin-bottom: 12px;
-            overflow-x: auto;
-            border: 1px solid #1e293b;
-        }
-
-        .step-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 0.88rem;
-            line-height: 1.55;
-        }
-
-        .step-what, .step-why {
-            background: #f8fafc;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border-left: 3px solid transparent;
-        }
-
-        .step-what {
-            border-left-color: #3b82f6;
-        }
-
-        .step-why {
-            border-left-color: #10b981;
-        }
-
-        .step-label {
-            font-weight: 700;
-            margin-bottom: 2px;
-            display: block;
             font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
 
-        .step-what .step-label { color: #2563eb; }
-        .step-why .step-label { color: #059669; }
+        .step-code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
 
-        @media (max-width: 600px) {
-            .container { padding: 24px 18px; }
-            .challenge-selector { flex-direction: column; }
-            .header-container { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .modal-tab-bar { flex-direction: column; }
+        .step-details {
+            font-size: 0.88rem;
+            color: #334155;
+            line-height: 1.55;
+        }
+
+        .step-details code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .step-label {
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+            margin-top: 6px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -823,143 +1000,196 @@
 
 <div class="layout-wrapper">
     <div class="container">
+        
+        <!-- HEADER PRINCIPAL -->
         <div class="header-container">
             <div class="logo-area">
                 <div class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
                     </svg>
                 </div>
                 <div>
-                    <div class="header-tag">Oficina Prática de Dados • 1ª Aula</div>
                     <h1>Validador de Desafios</h1>
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">Oficina de Tratamento de Dados • UNICID</div>
                 </div>
             </div>
-            <button class="help-btn" id="openHelpBtn" title="Ver passo a passo detalhado de como responder">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                </svg>
-                Passo a Passo
-            </button>
+
+            <div class="header-actions">
+                <!-- Status do Pyodide -->
+                <div class="py-status-badge loading" id="pyStatusBadge" title="Ambiente de Execução Python">
+                    <div class="py-status-dot"></div>
+                    <span id="pyStatusText">Inicializando Python...</span>
+                </div>
+
+                <button class="help-btn" id="openHelpBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    Guia de Código
+                </button>
+            </div>
         </div>
 
         <p class="subtitle">
-            Escolha o desafio abaixo, resolva em Python e arraste o seu arquivo <strong>tratado.csv</strong> para validar sua solução na hora!
+            Escreva e execute seu código de tratamento de dados diretamente na plataforma para obter validação imediata e feedback de execução.
         </p>
 
-        <!-- Challenge Selection Tabs -->
+        <!-- SELETOR DE DESAFIOS (TABS) -->
         <div class="challenge-selector">
             <button class="challenge-btn active" data-challenge="1">
-                Desafio 1: E-mails
+                <span>Desafio 1: E-mails</span>
                 <span class="badge-pill">Nível 1</span>
             </button>
             <button class="challenge-btn" data-challenge="2">
-                Desafio 2: Churrasco
-                <span class="badge-pill">Nível 2</span>
+                <span>Desafio 2: Churrasco</span>
+                <span class="badge-pill" style="background:#fef3c7; color:#92400e;">Nível 2</span>
             </button>
             <button class="challenge-btn" data-challenge="3">
-                Desafio 3: Presença
-                <span class="badge-pill">Nível 3</span>
+                <span>Desafio 3: Presença</span>
+                <span class="badge-pill" style="background:#f3e8ff; color:#6b21a8;">Nível 3</span>
             </button>
         </div>
 
-        <!-- Dynamic Challenge Instruction Box -->
-        <div class="instruction-card" id="instructionBox">
+        <!-- CARTÃO DE INSTRUÇÃO E ESPECIFICAÇÃO -->
+        <div class="instruction-card">
             <h4 id="instructionTitle">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                </svg>
-                Missão do Desafio 1: A Lista de E-mails do Evento
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+                Especificação Técnica — Desafio 1
             </h4>
             <div class="story-text" id="instructionStory">
-                <strong>O Caso Real:</strong> Você recebeu uma lista de participantes para enviar os convites de um evento de tecnologia. Mas alguns e-mails têm espaços no final, outros vieram com letras maiúsculas e alguns participantes esqueceram de preencher!
+                <strong>Cenário:</strong> A lista de participantes do evento contém registros com inconsistências de formato: endereços vazios (nulos), espaços soltos nas extremidades e alternância de caracteres maiúsculos.
             </div>
             <div id="instructionText">
                 <ol class="instruction-steps">
-                    <li>Abra o arquivo <code>desafio1/emails_brutos.csv</code> no Python.</li>
-                    <li>Substitua os e-mails vazios por <code>"email_nao_informado@dominio.com"</code> usando <code>.fillna(...)</code></li>
-                    <li>Remova espaços extras no início e fim com <code>.str.strip()</code></li>
-                    <li>Deixe tudo em letras minúsculas com <code>.str.lower()</code></li>
-                    <li>Salve como <code>desafio1/tratado.csv</code> e arraste aqui!</li>
+                    <li>Carregar o arquivo fonte: <code>df = pd.read_csv("desafio1/emails_brutos.csv")</code></li>
+                    <li>Tratar registros nulos: <code>df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</code></li>
+                    <li>Remover espaços excedentes: <code>df["email"] = df["email"].str.strip()</code></li>
+                    <li>Padronizar em minúsculas: <code>df["email"] = df["email"].str.lower()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
                 </ol>
             </div>
         </div>
 
-        <!-- 1. Drag & Drop Zone (Área Inicial) -->
-        <div class="drop-zone" id="dropZone">
-            <div class="drop-zone-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                </svg>
+        <!-- ============================================================ -->
+        <!-- EDITOR DE CÓDIGO PYTHON INTERATIVO -->
+        <!-- ============================================================ -->
+        <div class="code-editor-container" id="editorContainer">
+            <div class="editor-top-bar">
+                <div class="editor-title">
+                    <div class="editor-dots">
+                        <div class="editor-dot red"></div>
+                        <div class="editor-dot yellow"></div>
+                        <div class="editor-dot green"></div>
+                    </div>
+                    <span>script_tratamento.py</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="tool-btn" onclick="openRawDataModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Ver Dados Brutos
+                    </button>
+                    <button class="tool-btn" onclick="resetEditorCode()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        Restaurar Código
+                    </button>
+                </div>
             </div>
-            <div class="drop-zone-title" id="dropTitle">Arraste seu arquivo tratado.csv aqui</div>
-            <div class="drop-zone-desc">ou clique nesta área para selecionar do computador</div>
-            <input type="file" id="fileInput" accept=".csv">
+
+            <div class="editor-workspace">
+                <div class="line-numbers" id="lineNumbers">
+                    <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div>
+                </div>
+                <textarea class="code-textarea" id="codeEditor" spellcheck="false" placeholder="Escreva o script Python para o tratamento dos dados..."></textarea>
+            </div>
+
+            <div class="editor-action-bar">
+                <div style="font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    <span>Ambiente Python nativo com suporte a bibliotecas de processamento de dados.</span>
+                </div>
+                <button class="run-code-btn" id="runCodeBtn" onclick="runPythonCode()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                    </svg>
+                    Executar e Validar Código
+                </button>
+            </div>
+
+            <!-- Console Log Output -->
+            <div class="console-box" id="consoleBox">
+                <div class="console-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                    Saída Standard (sys.stdout)
+                </div>
+                <div class="console-content" id="consoleContent"></div>
+            </div>
         </div>
 
-        <!-- 2. Tela de Loading (Enquanto Lê o Arquivo) -->
+        <!-- ============================================================ -->
+        <!-- TELAS DE LOADING E RESULTADOS -->
+        <!-- ============================================================ -->
         <div class="loading-screen" id="loadingScreen">
             <div class="loading-spinner"></div>
-            <div class="loading-title">Lendo e analisando seu arquivo...</div>
-            <div class="loading-subtitle" id="loadingFileName">Verificando formatação de linhas e colunas</div>
+            <div class="loading-title">Executando Script e Inspecionando DataFrame...</div>
+            <div class="loading-subtitle" id="loadingFileName">Avaliando conformidade do tratamento de dados</div>
             <div class="loading-bar-wrap">
                 <div class="loading-bar-fill"></div>
             </div>
         </div>
 
-        <!-- 3. Tela de Sucesso (Verdinho com Parabéns) -->
+        <!-- TELAS DE SUCESSO -->
         <div class="result-screen success" id="successScreen">
             <div class="status-badge-circle success">
-                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
             </div>
-            <h2 class="success-title">PARABÉNS! RESPOSTA CORRETA! 🎉</h2>
-            <p class="success-desc">Seu tratamento de dados foi executado com perfeição. O dataset está limpo, padronizado e pronto para análise!</p>
-            
+            <h2 class="success-title">Validação Concluída com Sucesso</h2>
+            <p class="success-desc">O script atendeu a todos os critérios de limpeza e transformação especificados no desafio.</p>
+
             <div id="successMetricContainer"></div>
 
             <div class="checklist-box" id="successChecklist"></div>
 
-            <div style="margin-top:16px; font-weight:700; font-size:0.88rem; color:#166534;">
-                Amostra do Arquivo Tratado (Primeiras Linhas):
+            <div style="font-weight: 700; color: #166534; font-size: 0.88rem; margin-top: 14px;">
+                Amostra Visual da Tabela Resultante:
             </div>
             <div class="preview-wrapper" id="successPreviewWrapper"></div>
 
             <div class="result-actions">
                 <button class="reset-btn success-reset" onclick="resetValidator()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    Validar Outro Arquivo
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    Editar Código
                 </button>
             </div>
         </div>
 
-        <!-- 4. Tela de Erro (Texto Vermelho Apontando os Erros) -->
+        <!-- TELA DE ERRO DE TRATAMENTO / SINTAXE -->
         <div class="result-screen error" id="errorScreen">
             <div class="status-badge-circle error">
-                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
             </div>
-            <h2 class="error-title">OPS! ENCONTRAMOS ALGUNS ERROS ⚠️</h2>
-            <p class="error-desc">O arquivo foi lido, mas ainda encontramos inconsistências que precisam ser ajustadas no seu código Python:</p>
+            <h2 class="error-title">Inconformidade no Tratamento</h2>
+            <p class="error-desc" id="errorDescText">Foram identificadas inconsistências no resultado do processamento. Ajuste o código abaixo:</p>
 
             <div class="error-list" id="errorList"></div>
 
+            <div id="pythonErrorContainer" style="display:none;">
+                <div style="font-size: 0.88rem; font-weight: 700; color: #991b1b; margin-top: 12px;">Detalhes do Rastro de Exceção (Python Traceback):</div>
+                <div class="python-error-box" id="pythonErrorText"></div>
+            </div>
+
             <div class="result-actions">
                 <button class="reset-btn error-reset" onclick="resetValidator()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    Tentar Novamente
-                </button>
-                <button class="reset-btn" style="background:#f1f5f9; color:#0f172a;" onclick="openHelpForCurrent()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                    </svg>
-                    Ver Passo a Passo
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    Retornar ao Editor
                 </button>
             </div>
         </div>
@@ -967,435 +1197,317 @@
     </div>
 </div>
 
-<!-- Modal: Guia Passo a Passo Mastigado Linha por Linha -->
-<div class="modal-overlay" id="helpModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+<!-- ============================================================ -->
+<!-- MODAL DE EXIBIÇÃO DE DADOS BRUTOS (RAW DATA) -->
+<!-- ============================================================ -->
+<div class="raw-data-modal" id="rawDataModal">
+    <div class="raw-data-content">
+        <div class="raw-data-header">
+            <h3 id="rawDataTitle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
                 </svg>
-                Passo a Passo de Resolução (Linha por Linha)
-            </h2>
-            <button class="modal-close" id="closeHelpBtn" title="Fechar janela">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+                Tabela de Entrada Bruta
+            </h3>
+            <button class="close-modal-btn" onclick="closeRawDataModal()">&times;</button>
         </div>
-        <div class="modal-content">
-            
-            <!-- Modal Internal Tab Selector -->
-            <div class="modal-tab-bar">
-                <button class="modal-tab-btn active" data-tab="1">Desafio 1: E-mails</button>
-                <button class="modal-tab-btn" data-tab="2">Desafio 2: Churrasco</button>
-                <button class="modal-tab-btn" data-tab="3">Desafio 3: Presença</button>
+        <div class="raw-data-body" id="rawDataBody">
+            <!-- Tabela preenchida via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL DE GUIA E INSTRUÇÕES DE CÓDIGO -->
+<!-- ============================================================ -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" /></svg>
+                Guia de Sintaxe e Funções Python
+            </h3>
+            <button class="close-modal-btn" id="closeHelpBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" data-tab="1">Desafio 1 (E-mails)</button>
+                <button class="modal-tab-btn" data-tab="2">Desafio 2 (Churrasco)</button>
+                <button class="modal-tab-btn" data-tab="3">Desafio 3 (Presença)</button>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- GUIA DO DESAFIO 1 -->
-            <!-- ============================================================ -->
+            <!-- GUIA DESAFIO 1 -->
             <div class="guide-section active" id="guide-1">
                 <div class="guide-intro">
-                    <strong>Objetivo do Desafio 1:</strong> Limpar e padronizar os e-mails dos inscritos para o envio de convites do evento. Siga as linhas abaixo no seu script Python:
+                    <strong>Estrutura de Código — Desafio 1:</strong> Utilize os métodos <code>fillna()</code>, <code>.str.strip()</code> e <code>.str.lower()</code> para higienizar a coluna de e-mails.
                 </div>
 
-                <!-- Passo 1 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 1 • Importar a Biblioteca</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
                     <div class="step-code">import pandas as pd</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Carrega a biblioteca Pandas no Python e dá a ela o apelido <code>pd</code> para facilitar a escrita no código.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            O Python básico não possui comandos nativos para manipular tabelas inteiras de uma só vez. O Pandas cria o "DataFrame", que funciona como uma super planilha inteligente.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Carrega a biblioteca Pandas e atribui a ela o alias <code>pd</code> para manipulação de coleções tabulares de dados.
                     </div>
                 </div>
 
-                <!-- Passo 2 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 2 • Carregar o Arquivo Bruto</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 2 • Ingestão do Arquivo CSV</span></div>
                     <div class="step-code">df = pd.read_csv("desafio1/emails_brutos.csv")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Abre o arquivo CSV com os dados não tratados e guarda todas as linhas e colunas dentro da variável <code>df</code>.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Para que o Python possa limpar os dados, eles precisam primeiro ser lidos do disco rígido e carregados na memória do computador.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Executa a leitura do arquivo bruto e constrói a estrutura tabular de DataFrame na memória.
                     </div>
                 </div>
 
-                <!-- Passo 3 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 3 • Preencher os E-mails em Branco</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 3 • Imputação de Dados Ausentes</span></div>
                     <div class="step-code">df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            O método <code>.fillna(...)</code> localiza todas as células vazias (ausentes / NaN) da coluna <code>email</code> e preenche com o texto especificado.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Se tentarmos disparar convites para um campo vazio, o sistema de e-mails trava com erro. Usar um e-mail padrão evita a quebra do sistema e permite saber exatamente quantos alunos não informaram contato.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Aplica a substituição de entradas nulas (<code>NaN</code>) pelo valor padrão especificado.
                     </div>
                 </div>
 
-                <!-- Passo 4 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 4 • Remover Espaços Extras nas Pontas</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 4 • Remoção de Espaços nas Extremidades</span></div>
                     <div class="step-code">df["email"] = df["email"].str.strip()</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            O comando <code>.str.strip()</code> remove espaços em branco acidentais digitados antes ou depois do e-mail (ex: <code>"  joao@email.com "</code> vira <code>"joao@email.com"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Para o computador, um espaço faz parte do texto. Se o e-mail tiver um espaço no início ou fim, os servidores de e-mail rejeitam o envio por "endereço inválido".
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        O método <code>.str.strip()</code> remove caracteres de espaço antes e depois de cada string registrada.
                     </div>
                 </div>
 
-                <!-- Passo 5 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 5 • Padronizar em Letras Minúsculas</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 5 • Normalização para Minúsculas</span></div>
                     <div class="step-code">df["email"] = df["email"].str.lower()</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Transforma todas as letras da coluna <code>email</code> em letras minúsculas (ex: <code>"MARIA@GMAIL.COM"</code> vira <code>"maria@gmail.com"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Evita cadastros duplicados. Sem essa padronização, um banco de dados pode tratar <code>"Ana@gmail.com"</code> e <code>"ANA@GMAIL.COM"</code> como duas pessoas diferentes, disparando dois convites para o mesmo aluno.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Passo 6 -->
-                <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 6 • Salvar o Arquivo Tratado</span>
-                    </div>
-                    <div class="step-code">df.to_csv("desafio1/tratado.csv", index=False)</div>
-                    <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Grava a tabela limpa em um novo arquivo CSV. O parâmetro <code>index=False</code> impede que o Python crie uma coluna extra e desnecessária com os números das linhas (0, 1, 2...).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Toda a limpeza feita no Python acontece apenas na memória temporária. Para entregar o resultado e validar aqui no site, precisamos salvar o arquivo final no disco!
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        O método <code>.str.lower()</code> converte todos os caracteres de texto para caixa baixa.
                     </div>
                 </div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- GUIA DO DESAFIO 2 -->
-            <!-- ============================================================ -->
+            <!-- GUIA DESAFIO 2 -->
             <div class="guide-section" id="guide-2">
-                <div class="guide-intro" style="background:#fefce8; border-color:#fde047; color:#854d0e;">
-                    <strong>Objetivo do Desafio 2:</strong> Tratar a planilha de gastos do churrasco, substituindo vírgulas por pontos decimais e convertendo texto para número para permitir a soma total.
+                <div class="guide-intro">
+                    <strong>Estrutura de Código — Desafio 2:</strong> Realize a substituição do separador decimal, a conversão do tipo de dados (casting) para <code>float</code> e a imputação de dados numéricos ausentes.
                 </div>
 
-                <!-- Passo 1 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 1 • Importar a Biblioteca</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
                     <div class="step-code">import pandas as pd</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Carrega o Pandas para manipular as colunas numéricas da planilha de despesas.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            O Pandas nos permite transformar e converter colunas inteiras de uma vez só com facilidade.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Inicializa o Pandas para execução de operações vetorizadas na coluna de despesas.
                     </div>
                 </div>
 
-                <!-- Passo 2 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 2 • Carregar as Despesas</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 2 • Leitura da Planilha</span></div>
                     <div class="step-code">df = pd.read_csv("desafio2/despesas_churrasco.csv")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Lê o arquivo onde os amigos anotaram o que compraram e quanto pagaram.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Coloca a lista de despesas na memória do Python para podermos consertar os valores incorretos.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Carrega a base de dados de despesas no objeto DataFrame.
                     </div>
                 </div>
 
-                <!-- Passo 3 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 3 • Preencher os Valores Não Informados</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 3 • Imputação de Valores Ausentes</span></div>
                     <div class="step-code">df["valor"] = df["valor"].fillna("0.00")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Preenche os amigos que não colocaram o valor com custo zero (<code>"0.00"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Em matemática computacional, qualquer número somado a um dado vazio (<code>NaN</code>) vira <code>NaN</code>. Se deixarmos campos em branco, a soma de todo o churrasco vai falhar!
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Preenche registros nulos com o valor literal <code>"0.00"</code> para impedir falhas durante a conversão de tipo.
                     </div>
                 </div>
 
-                <!-- Passo 4 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 4 • Substituir Vírgula por Ponto</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 4 • Substituição de Caracteres Decimais</span></div>
                     <div class="step-code">df["valor"] = df["valor"].astype(str).str.replace(",", ".")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Garante que os dados sejam texto e substitui a vírgula brasileira (<code>,</code>) pelo ponto decimal internacional (<code>.</code>) (ex: <code>"145,90"</code> vira <code>"145.90"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            O Python foi criado no padrão americano, onde números decimais usam ponto. Se tentarmos transformar um texto com vírgula em número, o Python gera um erro de sintaxe.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Garante o tipo string e substitui vírgulas (<code>,</code>) por pontos (<code>.</code>), conforme o padrão numérico internacional.
                     </div>
                 </div>
 
-                <!-- Passo 5 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 5 • Converter para Número Decimal (Float)</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 5 • Conversão de Tipo (Type Casting)</span></div>
                     <div class="step-code">df["valor"] = df["valor"].astype(float)</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Converte o tipo da coluna de texto (string) para número decimal (<code>float</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            O computador não faz contas matemáticas com textos. Se somarmos <code>"10" + "20"</code> como texto, o resultado vira <code>"1020"</code>! Com <code>float</code>, o Python consegue somar o total real da festa (<code>df["valor"].sum()</code>).
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Passo 6 -->
-                <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 6 • Salvar a Planilha Calculável</span>
-                    </div>
-                    <div class="step-code">df.to_csv("desafio2/tratado.csv", index=False)</div>
-                    <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Exporta os dados corrigidos para o arquivo <code>desafio2/tratado.csv</code>.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Agora a tabela tem apenas números válidos e está pronta para ser dividida entre os amigos e validada no site!
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Transforma o tipo da coluna de texto para ponto flutuante (<code>float</code>), permitindo operações de agregação como <code>.sum()</code>.
                     </div>
                 </div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- GUIA DO DESAFIO 3 -->
-            <!-- ============================================================ -->
+            <!-- GUIA DESAFIO 3 -->
             <div class="guide-section" id="guide-3">
-                <div class="guide-intro" style="background:#faf5ff; border-color:#e9d5ff; color:#6b21a8;">
-                    <strong>Objetivo do Desafio 3:</strong> Padronizar cidades em maiúsculas e nomes em título para que o Python consiga identificar e eliminar participantes repetidos da lista de presença.
+                <div class="guide-intro">
+                    <strong>Estrutura de Código — Desafio 3:</strong> Trate campos de texto com <code>.upper()</code> e <code>.title()</code>, e execute a eliminação de registros redundantes via <code>drop_duplicates()</code>.
                 </div>
 
-                <!-- Passo 1 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 1 • Importar a Biblioteca</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 1 • Importação de Bibliotecas</span></div>
                     <div class="step-code">import pandas as pd</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Importa o Pandas para podermos analisar e limpar as linhas duplicadas.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            O Pandas possui funções extremamente rápidas de deduplicação que economizam horas de trabalho manual.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Carrega a biblioteca Pandas para manipulação da lista de presença.
                     </div>
                 </div>
 
-                <!-- Passo 2 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 2 • Carregar a Lista de Presença</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 2 • Leitura da Lista de Presença</span></div>
                     <div class="step-code">df = pd.read_csv("desafio3/lista_presenca.csv")</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Carrega o arquivo onde constam os nomes e as cidades dos inscritos.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Coloca a lista na memória para localizarmos inscrições duplicadas feitas por engano.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Ingere a tabela contendo nomes de participantes e respectivas cidades.
                     </div>
                 </div>
 
-                <!-- Passo 3 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 3 • Padronizar Cidades em MAIÚSCULAS</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 3 • Normalização de Cidades em Maiúsculas</span></div>
                     <div class="step-code">df["cidade"] = df["cidade"].str.strip().str.upper()</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Remove espaços extras e converte o texto de todas as cidades para letras MAIÚSCULAS (ex: <code>"são paulo"</code> e <code>" São Paulo "</code> viram <code>"SÃO PAULO"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Se não padronizarmos a escrita antes, o computador vai achar que <code>"são paulo"</code> e <code>"SÃO PAULO"</code> são duas cidades diferentes e não vai conseguir remover as linhas duplicadas!
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Remove espaços e padroniza a escrita de todas as cidades em caixa alta (<code>SÃO PAULO</code>).
                     </div>
                 </div>
 
-                <!-- Passo 4 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 4 • Padronizar Nomes em Formato Título</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 4 • Normalização de Nomes em Formato Título</span></div>
                     <div class="step-code">df["nome"] = df["nome"].str.strip().str.title()</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            O método <code>.str.title()</code> deixa a primeira letra de cada palavra maiúscula (ex: <code>"lucas silva"</code> vira <code>"Lucas Silva"</code>).
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Padroniza nomes próprios para geração de certificados oficiais e relatórios sem erros de digitação.
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Aplica a capitalização da primeira letra de cada palavra (<code>Lucas Silva</code>).
                     </div>
                 </div>
 
-                <!-- Passo 5 -->
                 <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 5 • Eliminar Inscrições Duplicadas</span>
-                    </div>
+                    <div class="step-header"><span class="step-number">Passo 5 • Deduplicação de Registros</span></div>
                     <div class="step-code">df = df.drop_duplicates()</div>
                     <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Compara todas as linhas da tabela e apaga automaticamente aquelas que forem idênticas a um registro anterior.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Alunos ansiosos costumam clicar duas vezes no botão de enviar formulário. O <code>drop_duplicates()</code> garante que cada aluno só seja contado uma única vez no evento e nos sorteios.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Passo 6 -->
-                <div class="step-card">
-                    <div class="step-header">
-                        <span class="step-number">Passo 6 • Salvar a Lista Limpa de Participantes</span>
-                    </div>
-                    <div class="step-code">df.to_csv("desafio3/tratado.csv", index=False)</div>
-                    <div class="step-details">
-                        <div class="step-what">
-                            <span class="step-label">🔍 O que essa linha faz:</span>
-                            Salva a lista final com apenas os participantes únicos no arquivo <code>desafio3/tratado.csv</code>.
-                        </div>
-                        <div class="step-why">
-                            <span class="step-label">💡 Por que fazemos isso?</span>
-                            Gera a base oficial para emissão de certificados e validação no site!
-                        </div>
+                        <span class="step-label">Descrição:</span>
+                        Localiza e remove linhas inteiramente idênticas no DataFrame.
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 <script>
-    let currentChallenge = 1;
+    // DATASETS BRUTOS EM EMBEDDED CSV
+    const RAW_DATASETS = {
+        1: `nome,email
+Lucas Silva,   LUCAS.SILVA@GMAIL.COM   
+Beatriz Souza,beatriz_tech@HOTMAIL.com 
+Matheus Santos,
+Gabriel Costa, gabriel.costa@unicid.br
+Maria Eduarda,  MARIA.EDUARDA@OUTLOOK.COM 
+Carlos Henrique,carlos.henrique@GMAIL.COM
+Ana Paula,
+Pedro Rocha,   PEDRO.ROCHA@EMPRESA.COM.BR
+Juliana Mendes, juliana_dev@HOTMAIL.COM   
+Rodrigo Lima,rodrigo.lima@unicid.br
+Fernanda Alves,   Fernanda.Alves@Yahoo.Com  
+Rafael Moreira,
+Camila Prado,camila_prado@GMAIL.COM 
+Thiago Martins, THIAGO.MARTINS@OUTLOOK.COM
+Larissa Ferreira, larissa.f@unicid.br`,
+
+        2: `amigo,item,valor
+Lucas Silva,Picanha e linguiça,"145,90"
+Beatriz Souza,Refrigerantes e sucos,"42,50"
+Matheus Santos,Carvão e gelo,
+Gabriel Costa,Pão de alho e queijo coalho,"35,00"
+Maria Eduarda,Farofa e vinagrete,"28,90"
+Carlos Henrique,Sobremesa e descartáveis,
+Ana Paula,Asas de frango temperadas,"58,40"
+Pedro Rocha,Copos e guardanapos,"16,50"
+Juliana Mendes,Carne alcatra,"110,00"
+Rodrigo Lima,Gelo filtrado extra,
+Fernanda Alves,Temperos e molhos,"22,80"
+Thiago Martins,Snacks e petiscos,"30,00"`,
+
+        3: `nome,cidade
+lucas silva,são paulo
+Beatriz Souza,   SÃO PAULO 
+Matheus Santos,Campinas
+Gabriel Costa,Santos
+Maria Eduarda,são paulo
+lucas silva,   São Paulo  
+Carlos Henrique,São Bernardo
+Ana Paula,   santos
+Beatriz Souza,SÃO PAULO
+Pedro Rocha,Campinas
+Juliana Mendes,   são paulo 
+Matheus Santos,   campinas 
+Rodrigo Lima,Guarulhos
+Fernanda Alves,São Paulo
+Gabriel Costa,  Santos`
+    };
+
+    // TEMPLATES INICIAIS DE CÓDIGO PYTHON (EDITOR LIMPO PARA O ALUNO DIGITAR DO ZERO)
+    const STARTER_CODES = {
+        1: "",
+        2: "",
+        3: ""
+    };
 
     const challengeMeta = {
         1: {
-            title: "Missão do Desafio 1: A Lista de E-mails do Evento",
-            story: "<strong>O Caso Real:</strong> Você recebeu uma lista de participantes para enviar os convites de um evento de tecnologia. Mas alguns e-mails têm espaços no final, outros vieram com letras maiúsculas e alguns participantes esqueceram de preencher!",
+            title: "Especificação Técnica — Desafio 1",
+            story: "<strong>Cenário:</strong> A lista de participantes do evento contém registros com inconsistências de formato: endereços vazios (nulos), espaços soltos nas extremidades e alternância de caracteres maiúsculos.",
             steps: `
                 <ol class="instruction-steps">
-                    <li>Abra o arquivo <code>desafio1/emails_brutos.csv</code> no Python.</li>
-                    <li>Substitua os e-mails vazios por <code>"email_nao_informado@dominio.com"</code> usando <code>.fillna(...)</code></li>
-                    <li>Remova espaços extras no início e fim com <code>.str.strip()</code></li>
-                    <li>Deixe tudo em letras minúsculas com <code>.str.lower()</code></li>
-                    <li>Salve como <code>desafio1/tratado.csv</code> e arraste aqui!</li>
+                    <li>Carregar o arquivo fonte: <code>df = pd.read_csv("desafio1/emails_brutos.csv")</code></li>
+                    <li>Tratar registros nulos: <code>df["email"] = df["email"].fillna("email_nao_informado@dominio.com")</code></li>
+                    <li>Remover espaços excedentes: <code>df["email"] = df["email"].str.strip()</code></li>
+                    <li>Padronizar em minúsculas: <code>df["email"] = df["email"].str.lower()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
                 </ol>
             `
         },
         2: {
-            title: "Missão do Desafio 2: A Planilha do Churrasco",
-            story: "<strong>O Caso Real:</strong> Você e seus amigos organizaram um churrasco e anotaram os gastos no WhatsApp. Os valores vieram com vírgula (ex: <code>'50,00'</code>) e algumas pessoas deixaram em branco. Sem arrumar isso, a calculadora trava!",
+            title: "Especificação Técnica — Desafio 2",
+            story: "<strong>Cenário:</strong> A tabela de despesas contém valores nulos e números gravados em formato de texto utilizando vírgula como separador decimal.",
             steps: `
                 <ol class="instruction-steps">
-                    <li>Abra o arquivo <code>desafio2/despesas_churrasco.csv</code> no Python.</li>
-                    <li>Preencha quem não colocou valor com zero: <code>df['valor'] = df['valor'].fillna('0.00')</code></li>
-                    <li>Substitua as vírgulas por pontos: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code></li>
-                    <li>Converta a coluna para número decimal: <code>df['valor'] = df['valor'].astype(float)</code></li>
-                    <li>Salve como <code>desafio2/tratado.csv</code> e arraste aqui!</li>
+                    <li>Carregar as despesas: <code>df = pd.read_csv("desafio2/despesas_churrasco.csv")</code></li>
+                    <li>Preencher valores ausentes: <code>df['valor'] = df['valor'].fillna('0.00')</code></li>
+                    <li>Substituir separador decimal: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code></li>
+                    <li>Converter para tipo flutuante: <code>df['valor'] = df['valor'].astype(float)</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
                 </ol>
             `
         },
         3: {
-            title: "Missão do Desafio 3: A Lista de Presença da Oficina",
-            story: "<strong>O Caso Real:</strong> Na entrada da oficina, os alunos preencheram um formulário. Alguns ansiosos enviaram duas vezes e outros digitaram a cidade ora minúscula (<code>'são paulo'</code>), ora maiúscula (<code>'SÃO PAULO'</code>).",
+            title: "Especificação Técnica — Desafio 3",
+            story: "<strong>Cenário:</strong> A lista de presença possui registros duplicados decorrentes de envios múltiplos, além de nomes e cidades com formatações inconsistentes.",
             steps: `
                 <ol class="instruction-steps">
-                    <li>Abra o arquivo <code>desafio3/lista_presenca.csv</code> no Python.</li>
-                    <li>Padronize a coluna de cidade em MAIÚSCULAS: <code>df['cidade'] = df['cidade'].str.strip().str.upper()</code></li>
-                    <li>Padronize a coluna de nome no formato Título: <code>df['nome'] = df['nome'].str.strip().str.title()</code></li>
-                    <li>Remova os alunos duplicados: <code>df = df.drop_duplicates()</code></li>
-                    <li>Salve como <code>desafio3/tratado.csv</code> e arraste aqui!</li>
+                    <li>Carregar a lista de presença: <code>df = pd.read_csv("desafio3/lista_presenca.csv")</code></li>
+                    <li>Padronizar cidades em maiúsculas: <code>df['cidade'] = df['cidade'].str.strip().str.upper()</code></li>
+                    <li>Padronizar nomes no formato título: <code>df['nome'] = df['nome'].str.strip().str.title()</code></li>
+                    <li>Eliminar registros duplicados: <code>df = df.drop_duplicates()</code></li>
+                    <li>Pressionar <strong>Executar e Validar Código</strong> para processar a solução.</li>
                 </ol>
             `
         }
     };
 
+    let currentChallenge = 1;
+    let pyodideInstance = null;
+    let pyodideReady = false;
+
     // UI Elements
     const buttons = document.querySelectorAll('.challenge-btn');
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('dropZone');
+    const editorContainer = document.getElementById('editorContainer');
+    const codeEditor = document.getElementById('codeEditor');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const consoleBox = document.getElementById('consoleBox');
+    const consoleContent = document.getElementById('consoleContent');
+    const runCodeBtn = document.getElementById('runCodeBtn');
     const loadingScreen = document.getElementById('loadingScreen');
     const loadingFileName = document.getElementById('loadingFileName');
     const successScreen = document.getElementById('successScreen');
@@ -1404,6 +1516,12 @@
     const successMetricContainer = document.getElementById('successMetricContainer');
     const successPreviewWrapper = document.getElementById('successPreviewWrapper');
     const errorList = document.getElementById('errorList');
+    const pythonErrorContainer = document.getElementById('pythonErrorContainer');
+    const pythonErrorText = document.getElementById('pythonErrorText');
+    const errorDescText = document.getElementById('errorDescText');
+
+    const pyStatusBadge = document.getElementById('pyStatusBadge');
+    const pyStatusText = document.getElementById('pyStatusText');
 
     const modal = document.getElementById('helpModal');
     const openHelpBtn = document.getElementById('openHelpBtn');
@@ -1412,10 +1530,128 @@
     const instructionStory = document.getElementById('instructionStory');
     const instructionText = document.getElementById('instructionText');
 
-    // Modal Tabs
     const modalTabBtns = document.querySelectorAll('.modal-tab-btn');
     const guideSections = document.querySelectorAll('.guide-section');
 
+    // Inicialização do Pyodide e Sistema de Arquivos Virtual
+    function setupVirtualFilesystem() {
+        if (!pyodideInstance) return;
+        const bases = ['/', '/home/pyodide'];
+        bases.forEach(base => {
+            [1, 2, 3].forEach(num => {
+                const dirPath = (base === '/' ? '' : base) + '/desafio' + num;
+                try { pyodideInstance.FS.mkdirTree(dirPath); } catch(e){}
+            });
+        });
+
+        // Escrever arquivos brutos em todas as rotas possíveis (relativas e absolutas)
+        pyodideInstance.FS.writeFile('/desafio1/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio1/emails_brutos.csv', RAW_DATASETS[1]);
+        pyodideInstance.FS.writeFile('/home/pyodide/emails_brutos.csv', RAW_DATASETS[1]);
+
+        pyodideInstance.FS.writeFile('/desafio2/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio2/despesas_churrasco.csv', RAW_DATASETS[2]);
+        pyodideInstance.FS.writeFile('/home/pyodide/despesas_churrasco.csv', RAW_DATASETS[2]);
+
+        pyodideInstance.FS.writeFile('/desafio3/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/home/pyodide/desafio3/lista_presenca.csv', RAW_DATASETS[3]);
+        pyodideInstance.FS.writeFile('/home/pyodide/lista_presenca.csv', RAW_DATASETS[3]);
+    }
+
+    async function initPyodideEngine() {
+        try {
+            if (typeof loadPyodide === 'undefined') {
+                throw new Error("Pyodide CDN offline");
+            }
+            pyodideInstance = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/"
+            });
+            
+            pyStatusText.innerText = "Carregando Pandas...";
+            await pyodideInstance.loadPackage(['pandas']);
+
+            setupVirtualFilesystem();
+
+            pyodideReady = true;
+            pyStatusBadge.className = "py-status-badge ready";
+            pyStatusText.innerText = "Python & Pandas Ativo";
+        } catch (err) {
+            console.warn("Pyodide init warning:", err);
+            pyStatusBadge.className = "py-status-badge error";
+            pyStatusText.innerText = "Erro ao Carregar Python";
+        }
+    }
+    initPyodideEngine();
+
+    // Editor de código: Atualização das linhas e Tab Key
+    function updateLineNumbers() {
+        const lines = codeEditor.value.split('\n');
+        let numsHtml = '';
+        for (let i = 1; i <= Math.max(lines.length, 5); i++) {
+            numsHtml += `<div>${i}</div>`;
+        }
+        lineNumbers.innerHTML = numsHtml;
+    }
+
+    codeEditor.addEventListener('input', updateLineNumbers);
+
+    codeEditor.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+            updateLineNumbers();
+        }
+    });
+
+    function resetEditorCode() {
+        codeEditor.value = STARTER_CODES[currentChallenge];
+        updateLineNumbers();
+        consoleBox.style.display = 'none';
+        consoleContent.innerText = '';
+        if (pyodideInstance) {
+            try {
+                pyodideInstance.runPython("if 'df' in globals(): del globals()['df']");
+            } catch(e){}
+        }
+    }
+
+    // Modal de Dados Brutos
+    function openRawDataModal() {
+        const rawTitle = document.getElementById('rawDataTitle');
+        const rawBody = document.getElementById('rawDataBody');
+        
+        const titles = {
+            1: "Tabela Bruta do Desafio 1 (emails_brutos.csv)",
+            2: "Tabela Bruta do Desafio 2 (despesas_churrasco.csv)",
+            3: "Tabela Bruta do Desafio 3 (lista_presenca.csv)"
+        };
+
+        rawTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg> ` + titles[currentChallenge];
+        const parsed = parseCSV(RAW_DATASETS[currentChallenge]);
+
+        let tableHtml = `
+            <table class="preview-table">
+                <thead><tr>${parsed.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                <tbody>
+                    ${parsed.rows.map(r => `<tr>${parsed.headers.map(h => `<td>${r[h] === "" ? "<span style='color:#ef4444;font-style:italic;'>(vazio)</span>" : r[h]}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        `;
+        rawBody.innerHTML = tableHtml;
+        document.getElementById('rawDataModal').style.display = 'flex';
+    }
+
+    function closeRawDataModal() {
+        document.getElementById('rawDataModal').style.display = 'none';
+    }
+
+    // Modal Tabs
     function switchModalTab(challengeNum) {
         modalTabBtns.forEach(b => {
             b.classList.toggle('active', parseInt(b.getAttribute('data-tab')) === challengeNum);
@@ -1441,13 +1677,11 @@
     closeHelpBtn.addEventListener('click', () => { modal.style.display = 'none'; });
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
-    // Reset Validator to Drop Zone
     function resetValidator() {
         loadingScreen.style.display = 'none';
         successScreen.style.display = 'none';
         errorScreen.style.display = 'none';
-        dropZone.style.display = 'block';
-        fileInput.value = '';
+        editorContainer.style.display = 'block';
     }
 
     // Main Screen Challenge Tabs Switch
@@ -1458,66 +1692,134 @@
             currentChallenge = parseInt(btn.getAttribute('data-challenge'));
             
             // Update instruction card
-            instructionTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg> ` + challengeMeta[currentChallenge].title;
+            instructionTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg> ` + challengeMeta[currentChallenge].title;
             instructionStory.innerHTML = challengeMeta[currentChallenge].story;
             instructionText.innerHTML = challengeMeta[currentChallenge].steps;
             
+            resetEditorCode();
             resetValidator();
         });
     });
 
-    // Drag and Drop events
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        let dt = e.dataTransfer;
-        handleFiles(dt.files);
-    });
-
-    fileInput.addEventListener('change', function() {
-        handleFiles(this.files);
-    });
-
-    function handleFiles(files) {
-        if (!files || files.length === 0) return;
-        const file = files[0];
-        
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-            showErrorScreen(["Formato inválido. Por favor, envie um arquivo .csv (ex: tratado.csv)."]);
+    // EXECUÇÃO DO CÓDIGO PYTHON VIA PYODIDE
+    async function runPythonCode() {
+        if (!pyodideReady) {
+            showErrorScreen(["O motor Python ainda está sendo carregado pelo navegador. Aguarde alguns instantes."], "Inicialização do Python em andamento");
             return;
         }
 
-        // MOSTRAR TELA DE LOADING
-        dropZone.style.display = 'none';
-        successScreen.style.display = 'none';
-        errorScreen.style.display = 'none';
-        loadingScreen.style.display = 'block';
-        loadingFileName.innerText = `Arquivo "${file.name}" carregado. Inspecionando dados...`;
+        const userCode = codeEditor.value.trim();
+        if (!userCode) {
+            showErrorScreen(["O editor de código está vazio. Insira as instruções de tratamento antes de executar."]);
+            return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target.result;
-            // Simulação elegante de leitura/inspeção de 850ms para UX
+        // MOSTRAR SPINNER
+        editorContainer.style.display = 'none';
+        loadingScreen.style.display = 'block';
+        loadingFileName.innerText = `Processando script Python do Desafio ${currentChallenge}...`;
+
+        consoleContent.innerText = "";
+        consoleBox.style.display = "none";
+
+        try {
+            // Garantir que os arquivos virtuais estejam disponíveis no FS do Pyodide
+            setupVirtualFilesystem();
+
+            // Definir o código do aluno no namespace do Pyodide
+            pyodideInstance.globals.set('_user_code_input', userCode);
+
+            // Executar script Python unificado para processar e capturar stdout/DataFrame
+            await pyodideInstance.runPythonAsync(`
+import sys
+import io
+
+# Limpar 'df' antes de executar
+if 'df' in globals():
+    del globals()['df']
+
+sys.stdout = io.StringIO()
+
+# Executar o código digitado no escopo global
+exec(_user_code_input, globals())
+
+_stdout_res = sys.stdout.getvalue()
+
+_csv_res = ""
+if 'df' in globals() and globals()['df'] is not None:
+    _csv_res = globals()['df'].to_csv(index=False)
+`);
+
+            const stdoutText = pyodideInstance.globals.get('_stdout_res') || "";
+            if (stdoutText && stdoutText.trim() !== "") {
+                consoleContent.innerText = stdoutText;
+                consoleBox.style.display = "block";
+            }
+
+            const csvOutput = pyodideInstance.globals.get('_csv_res') || "";
+
+            if (!csvOutput || csvOutput.trim() === "") {
+                showErrorScreen([
+                    "O código foi executado sem exceções, contudo a variável <code>df</code> não foi atribuída ou está vazia.",
+                    "Certifique-se de salvar o resultado na variável <code>df</code> (ex: <code>df = pd.read_csv(...)</code>)."
+                ]);
+                return;
+            }
+
+            // Validar os dados tratados
             setTimeout(() => {
-                validateCSV(text, currentChallenge);
-            }, 850);
-        };
-        reader.readAsText(file);
+                validateCSV(csvOutput, currentChallenge);
+            }, 300);
+
+        } catch (pyErr) {
+            loadingScreen.style.display = 'none';
+            const friendlyErr = formatPythonError(pyErr);
+            showErrorScreen(friendlyErr.hints, friendlyErr.title, friendlyErr.raw);
+        }
+    }
+
+    // FORMATADOR E TRADUTOR DIDÁTICO DE ERROS PYTHON
+    function formatPythonError(err) {
+        const errStr = err ? err.toString() : "Exceção não identificada";
+        let title = "Erro de Execução no Código Python";
+        let hints = [];
+
+        if (errStr.includes("SyntaxError") || errStr.includes("IndentationError")) {
+            title = "Erro de Sintaxe ou Indentação";
+            hints.push("O interpretador Python encontrou uma falha na estrutura sintática do código.");
+            hints.push("Verifique o fechamento de parênteses <code>()</code>, aspas <code>'</code> ou <code>\"</code> e confirme se não há palavras-chave digitadas incorretamente.");
+        } 
+        else if (errStr.includes("KeyError")) {
+            title = "Erro de Chave de Coluna (KeyError)";
+            hints.push("A coluna especificada não existe na estrutura do DataFrame.");
+            hints.push("Verifique se o nome do campo foi digitado corretamente (ex: <code>df['email']</code> ou <code>df['valor']</code>).");
+        } 
+        else if (errStr.includes("AttributeError")) {
+            title = "Erro de Atributo (Ausência de .str)";
+            hints.push("Tentativa de chamar um método de string em uma estrutura do Pandas sem utilizar o acessor de texto.");
+            hints.push("Para funções de texto em colunas do Pandas, utilize o acessor <code>.str</code> (ex: <code>df['coluna'].str.strip()</code>).");
+        } 
+        else if (errStr.includes("NameError")) {
+            title = "Erro de Nome de Variável (NameError)";
+            hints.push("Identificador ou variável utilizada sem declaração prévia.");
+            hints.push("Certifique-se de importar o módulo (<code>import pandas as pd</code>) e carregar os dados na variável <code>df</code>.");
+        } 
+        else if (errStr.includes("TypeError")) {
+            title = "Erro de Incompatibilidade de Tipo (TypeError)";
+            hints.push("Operação realizada entre tipos de dados incompatíveis.");
+            hints.push("Utilize <code>.astype(float)</code> para efetuar o casting numérico apropriado.");
+        } 
+        else if (errStr.includes("FileNotFoundError")) {
+            title = "Arquivo Não Encontrado (FileNotFoundError)";
+            hints.push("Caminho do arquivo incorreto informado no método de ingestão.");
+            hints.push(`Informe o caminho <code>"desafio${currentChallenge}/..."</code> no método <code>pd.read_csv(...)</code>.`);
+        } 
+        else {
+            hints.push("Ocorreu uma exceção não tratada durante o processamento das instruções.");
+            hints.push("Consulte o painel 'Guia de Código' para verificar a estrutura correta.");
+        }
+
+        return { title, hints, raw: errStr };
     }
 
     // CSV Parser
@@ -1546,7 +1848,7 @@
     function validateCSV(text, challenge) {
         const data = parseCSV(text);
         if (data.headers.length === 0 || data.rows.length === 0) {
-            showErrorScreen(["O arquivo CSV fornecido está vazio ou mal formatado."]);
+            showErrorScreen(["O arquivo CSV resultante está vazio ou com estrutura inválida."]);
             return;
         }
 
@@ -1559,7 +1861,7 @@
             const emailKey = data.headers.find(h => h.toLowerCase() === 'email');
             
             if (!emailKey) {
-                errors.push("Coluna de e-mail não encontrada. Certifique-se de que a coluna se chama <code>email</code>.");
+                errors.push("Coluna de e-mail não identificada no resultado. Nomeie a coluna como <code>email</code>.");
             } else {
                 let hasSpaces = false;
                 let hasUpper = false;
@@ -1578,23 +1880,23 @@
                 });
 
                 if (hasEmpty) {
-                    errors.push("Ainda existem e-mails em branco. Preencha com <code>df['email'] = df['email'].fillna('email_nao_informado@dominio.com')</code>.");
+                    errors.push("Persistência de valores vazios. Aplique <code>df['email'] = df['email'].fillna('email_nao_informado@dominio.com')</code>.");
                 }
                 if (hasSpaces) {
-                    errors.push("Foram encontrados e-mails com espaços no início ou fim. Remova com <code>df['email'] = df['email'].str.strip()</code>.");
+                    errors.push("Persistência de espaços em branco nas extremidades. Aplique <code>df['email'] = df['email'].str.strip()</code>.");
                 }
                 if (hasUpper) {
-                    errors.push("Foram encontrados e-mails com letras maiúsculas. Padronize em minúsculas com <code>df['email'] = df['email'].str.lower()</code>.");
+                    errors.push("Persistência de caracteres em maiúsculas. Aplique <code>df['email'] = df['email'].str.lower()</code>.");
                 }
                 if (!hasEmpty && !hasPlaceholder) {
-                    errors.push("Os e-mails ausentes precisam ser preenchidos com o texto exato <code>email_nao_informado@dominio.com</code>.");
+                    errors.push("Valores nulos devem ser imputados com o literal <code>email_nao_informado@dominio.com</code>.");
                 }
 
                 if (errors.length === 0) {
                     successDetails = [
-                        `Todos os ${data.rows.length} e-mails foram limpos sem espaços residuais nas pontas.`,
-                        `Todos os e-mails estão 100% em letras minúsculas (sem maiúsculas).`,
-                        `E-mails que estavam vazios foram preenchidos com o endereço padrão de segurança.`
+                        `Todos os ${data.rows.length} registros de e-mail tiveram espaços excedentes removidos.`,
+                        `Padronização completa de caracteres em caixa baixa (minúsculas).`,
+                        `Imputação de valores nulos executada com a string padrão de segurança.`
                     ];
                 }
             }
@@ -1604,7 +1906,7 @@
             const valorKey = data.headers.find(h => h.toLowerCase() === 'valor');
 
             if (!valorKey) {
-                errors.push("Coluna de valor não encontrada. Certifique-se de que a coluna se chama <code>valor</code>.");
+                errors.push("Coluna de valor não encontrada. Nomeie a coluna como <code>valor</code>.");
             } else {
                 let hasCommas = false;
                 let hasEmpty = false;
@@ -1627,22 +1929,22 @@
                 });
 
                 if (hasEmpty) {
-                    errors.push("Existem despesas em branco. Preencha com zero: <code>df['valor'] = df['valor'].fillna('0.00')</code>.");
+                    errors.push("Valores não informados pendentes. Substitua por zero: <code>df['valor'] = df['valor'].fillna('0.00')</code>.");
                 }
                 if (hasCommas) {
-                    errors.push("A coluna ainda possui vírgulas. Troque por pontos: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code>.");
+                    errors.push("Separador decimal incorreto (vírgula). Substitua por ponto: <code>df['valor'] = df['valor'].astype(str).str.replace(',', '.')</code>.");
                 }
                 if (notNumber) {
-                    errors.push("Existem dados que não são números decimais válidos. Converta para float: <code>df['valor'] = df['valor'].astype(float)</code>.");
+                    errors.push("Coluna não convertida para o tipo numérico. Realize o casting: <code>df['valor'] = df['valor'].astype(float)</code>.");
                 }
 
                 if (errors.length === 0) {
-                    extraBadge = `<div class="metric-badge">🥩 Total Calculado do Churrasco: R$ ${totalSoma.toFixed(2)}</div>`;
+                    extraBadge = `<div class="metric-badge">Total Agregado: R$ ${totalSoma.toFixed(2)}</div>`;
                     successDetails = [
-                        "Todas as vírgulas brasileiras foram substituídas por pontos decimais com sucesso.",
-                        "Valores não informados foram preenchidos com zero (0.00).",
-                        "Coluna convertida com sucesso para o tipo numérico Float.",
-                        "O Python agora consegue somar as despesas sem travar!"
+                        "Substituição de separadores decimais realizada com sucesso.",
+                        "Imputação de valores numéricos ausentes por zero (0.00).",
+                        "Conversão de tipo executada com sucesso para ponto flutuante (float).",
+                        "Agregação numérica habilitada sem ocorrência de exceções."
                     ];
                 }
             }
@@ -1653,7 +1955,7 @@
             const cidadeKey = data.headers.find(h => h.toLowerCase() === 'cidade');
 
             if (!nomeKey || !cidadeKey) {
-                errors.push("Colunas <code>nome</code> e <code>cidade</code> não encontradas no arquivo.");
+                errors.push("Colunas <code>nome</code> e <code>cidade</code> não localizadas no DataFrame.");
             } else {
                 let hasSpaces = false;
                 let cityNotUpper = false;
@@ -1670,22 +1972,21 @@
                 const hasDuplicates = uniqueRows.size !== rowsStr.length;
 
                 if (hasSpaces) {
-                    errors.push("Existem nomes ou cidades com espaços soltos nas pontas. Use <code>.str.strip()</code>.");
+                    errors.push("Persistência de espaços em branco nas extremidades dos textos. Utilizar <code>.str.strip()</code>.");
                 }
                 if (cityNotUpper) {
-                    errors.push("As cidades devem estar padronizadas em letras MAIÚSCULAS. Use <code>df['cidade'] = df['cidade'].str.upper()</code>.");
+                    errors.push("A coluna cidade deve ser padronizada em letras maiúsculas. Utilizar <code>df['cidade'] = df['cidade'].str.upper()</code>.");
                 }
                 if (hasDuplicates || data.rows.length > 12) {
-                    errors.push("Ainda foram encontradas inscrições repetidas. Remova duplicatas com <code>df = df.drop_duplicates()</code>.");
+                    errors.push("Registros duplicados ainda presentes na tabela. Remover redundâncias com <code>df = df.drop_duplicates()</code>.");
                 }
 
                 if (errors.length === 0) {
-                    extraBadge = `<div class="metric-badge">👥 Alunos Únicos Confirmados: ${data.rows.length} participantes</div>`;
+                    extraBadge = `<div class="metric-badge">Registros Únicos Confirmados: ${data.rows.length} participantes</div>`;
                     successDetails = [
-                        `Inscrições duplicadas eliminadas com sucesso (tabela reduzida para ${data.rows.length} registros únicos).`,
-                        "Nomes limpos e padronizados no formato Título.",
-                        "Cidades 100% padronizadas em letras maiúsculas.",
-                        "Nenhum participante será contado duas vezes nos certificados!"
+                        `Remoção de duplicatas efetuada (tabela consolidada em ${data.rows.length} registros únicos).`,
+                        "Nomes padronizados em formato título (capitalização inicial).",
+                        "Cidades 100% normalizadas em caixa alta (maiúsculas)."
                     ];
                 }
             }
@@ -1703,7 +2004,7 @@
 
     // EXIBIR TELA DE SUCESSO
     function showSuccessScreen(items, previewRows, headers, extraBadge) {
-        dropZone.style.display = 'none';
+        editorContainer.style.display = 'none';
         loadingScreen.style.display = 'none';
         errorScreen.style.display = 'none';
         successScreen.style.display = 'block';
@@ -1742,11 +2043,17 @@
     }
 
     // EXIBIR TELA DE ERRO
-    function showErrorScreen(errors) {
-        dropZone.style.display = 'none';
+    function showErrorScreen(errors, customTitle, rawTraceback) {
+        editorContainer.style.display = 'none';
         loadingScreen.style.display = 'none';
         successScreen.style.display = 'none';
         errorScreen.style.display = 'block';
+
+        if (customTitle) {
+            errorDescText.innerText = customTitle;
+        } else {
+            errorDescText.innerText = "Foram identificadas inconsistências no resultado do processamento. Ajuste o código abaixo:";
+        }
 
         let errorsHtml = '';
         errors.forEach(e => {
@@ -1757,17 +2064,27 @@
             `;
         });
         errorList.innerHTML = errorsHtml;
+
+        if (rawTraceback) {
+            pythonErrorText.innerText = rawTraceback;
+            pythonErrorContainer.style.display = 'block';
+        } else {
+            pythonErrorContainer.style.display = 'none';
+        }
     }
 
     function triggerCelebration() {
         if (typeof confetti === 'function') {
             confetti({
-                particleCount: 100,
-                spread: 80,
+                particleCount: 80,
+                spread: 70,
                 origin: { y: 0.6 }
             });
         }
     }
+
+    // Inicializar template de código
+    resetEditorCode();
 </script>
 
 </body>
